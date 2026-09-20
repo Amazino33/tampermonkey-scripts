@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Auto Click Sequence & OpenRouter AI Replies
 // @namespace    http://tampermonkey.net/
-// @version      5.8
-// @description  Run Senders auto campaign with 5-Message Context Window, Smart 3-Message Photo Request Trigger, Instant Like & Wink Auto-Responder (Column 4 Live Notifications), Image/Photo Chat Detection, Real-time Review Regeneration, 100% Dynamic Multi-Profile Persona Auto-Detection, and Standalone Floating AI Writeup Studio
+// @version      5.9
+// @description  Strict Zero-Default AI Messages (100% Genuine OpenRouter Generation, Automatic AI-Inactive User Alert & Campaign Pause), 5-Message Context Window, Smart 3-Message Photo Request Trigger, Instant Like & Wink Auto-Responder (Column 4 Live Notifications), Image/Photo Chat Detection, Real-time Review Regeneration, 100% Dynamic Multi-Profile Persona Auto-Detection, and Standalone Floating AI Writeup Studio
 // @match        *://*.alpha.date/*
 // @match        *://alpha.date/*
 // @updateURL    https://raw.githubusercontent.com/Amazino33/tampermonkey-scripts/main/userscript.user.js
@@ -59,6 +59,128 @@
         console.log(`%c[Alpha ${entry.time}] [${entry.level}] ${entry.message}`, style, data || '');
 
         renderDebugLogsIfOpen();
+    }
+
+    // High-visibility user alert banner & chime when AI is inactive or fails
+    function showAiInactiveAlert(title, message, isSticky = false) {
+        // 1. Subtle Web Audio notification chime
+        try {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (AudioCtx) {
+                const ctx = new AudioCtx();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(587.33, ctx.currentTime);
+                osc.frequency.setValueAtTime(880, ctx.currentTime + 0.12);
+                gain.gain.setValueAtTime(0.25, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.36);
+            }
+        } catch (e) {}
+
+        // 2. Native browser notification if permission granted
+        try {
+            if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+                new Notification(`🚨 [AI Inactive] ${title}`, {
+                    body: message,
+                    icon: 'https://alpha.date/favicon.ico'
+                });
+            }
+        } catch (e) {}
+
+        // 3. High-visibility top-of-screen alert banner
+        try {
+            let alertBox = document.getElementById('alpha-ai-alert-banner');
+            if (!alertBox) {
+                alertBox = document.createElement('div');
+                alertBox.id = 'alpha-ai-alert-banner';
+                alertBox.style.cssText = `
+                    position: fixed;
+                    top: 16px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    z-index: 999999999;
+                    background: linear-gradient(135deg, #7f1d1d 0%, #991b1b 100%);
+                    border: 2px solid #ef4444;
+                    border-radius: 12px;
+                    padding: 14px 20px;
+                    color: #ffffff;
+                    box-shadow: 0 12px 36px rgba(0,0,0,0.7), 0 0 24px rgba(239,68,68,0.6);
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                    font-size: 13px;
+                    line-height: 1.5;
+                    max-width: 580px;
+                    width: calc(100vw - 40px);
+                    display: flex;
+                    align-items: flex-start;
+                    gap: 14px;
+                    box-sizing: border-box;
+                    animation: alphaAlertFadeIn 0.3s ease-out;
+                `;
+                if (!document.getElementById('alpha-alert-style')) {
+                    const styleEl = document.createElement('style');
+                    styleEl.id = 'alpha-alert-style';
+                    styleEl.textContent = `
+                        @keyframes alphaAlertFadeIn {
+                            from { opacity: 0; transform: translate(-50%, -20px); }
+                            to { opacity: 1; transform: translate(-50%, 0); }
+                        }
+                    `;
+                    document.head.appendChild(styleEl);
+                }
+                document.body.appendChild(alertBox);
+            }
+
+            alertBox.innerHTML = `
+                <div style="font-size: 26px; line-height: 1; flex-shrink: 0;">🚨</div>
+                <div style="flex: 1;">
+                    <div style="font-weight: 800; font-size: 14px; margin-bottom: 4px; color: #fee2e2; letter-spacing: 0.3px;">
+                        ${title}
+                    </div>
+                    <div style="color: #fef2f2; font-size: 12px; line-height: 1.4;">
+                        ${message}
+                    </div>
+                    <div style="margin-top: 8px; font-size: 11px; padding: 4px 8px; background: rgba(0,0,0,0.25); border-radius: 4px; color: #fde68a; display: inline-block;">
+                        🛡️ <b>Strict Policy:</b> All default/fallback messages have been removed. No message will be sent without active AI.
+                    </div>
+                </div>
+                <button id="alpha-ai-alert-dismiss" style="
+                    background: rgba(255,255,255,0.2);
+                    border: 1px solid rgba(255,255,255,0.4);
+                    color: white;
+                    font-size: 13px;
+                    font-weight: bold;
+                    cursor: pointer;
+                    border-radius: 6px;
+                    padding: 4px 10px;
+                    margin-left: 4px;
+                    flex-shrink: 0;
+                ">Dismiss</button>
+            `;
+
+            const dismissBtn = document.getElementById('alpha-ai-alert-dismiss');
+            if (dismissBtn) {
+                dismissBtn.onclick = () => {
+                    if (alertBox && alertBox.parentNode) alertBox.remove();
+                };
+            }
+
+            if (!isSticky) {
+                setTimeout(() => {
+                    if (alertBox && alertBox.parentNode) alertBox.remove();
+                }, 12000);
+            }
+        } catch (e) {}
+
+        // 4. Update status bar and diagnostics
+        try {
+            updateStatus(`🚨 [AI INACTIVE] ${title}: ${message}`, true);
+        } catch (e) {}
+        logDebug('ERROR', `🚨 [AI Inactive] ${title}: ${message}`);
     }
 
     function smartClick(el) {
@@ -1511,51 +1633,33 @@ Strict Requirements:
                 console.warn('[Campaign AI] OpenRouter error:', err);
             }
         } else {
-            lastApiError = 'API key missing in settings';
+            lastApiError = 'OpenRouter API key missing in settings';
             logDebug('WARN', `[Campaign AI] No valid OpenRouter key configured in settings!`);
             updateStatus('⚠️ [Settings] OpenRouter API key missing!', 'warn');
         }
 
-        // Contextual Fallback (Only used if OpenRouter API is missing or failed)
-        const failReason = lastApiError || 'API bypassed / key missing';
-        logDebug('WARN', `[Campaign AI] ⚠️ Using DEFAULT TEMPLATE for ${partnerName}. Reason: ${failReason}`);
-        
-        const fallbacks = getFallbackSuggestions({
-            partnerName: partnerName,
-            profileName: profileName,
-            isEmptyChat: !chatInfo.last3 || chatInfo.last3.length === 0,
-            hasLikedProfile: false,
-            lastUserMsg: chatInfo.lastUserMsg
-        }, currentTone);
-
-        let picked = '';
-        const lastThreeFromMeFallback = chatInfo.last3FromMe || (chatInfo.last3 && chatInfo.last3.length >= 3 && chatInfo.last3.slice(-3).every((m) => m.role === 'me'));
-        if (lastThreeFromMeFallback) {
-            const photoRequestFallbacks = [
-                `You're awfully quiet with words today... how about sending me a picture instead? Let me see what you're up to right now! 😏📸`,
-                `Since you're playing hard to get, why don't you send me a photo instead? I'd love to see that handsome smile right now. 😉`,
-                `Words seem to be failing you today, so send me a picture! What does your world look like right now? 💋`,
-                `Don't leave me waiting on words! Send me a photo of yourself instead—what are you getting up to? 📸`
-            ];
-            picked = photoRequestFallbacks[Math.floor(Math.random() * photoRequestFallbacks.length)];
-        } else if (fallbacks && fallbacks.length > 0) {
-            picked = fallbacks[Math.floor(Math.random() * fallbacks.length)];
-        } else {
-            picked = `Hey ${partnerName}! I was just thinking about you and wanted to check in. How has your week been treating you so far?`;
-        }
-        const finalText = enforceCharacterLimit(cleanReplyText(picked), targetChars);
+        // STRICT ZERO-DEFAULT POLICY: If AI generation failed or key is missing, NEVER use fallback templates!
+        const failReason = lastApiError || (hasKey ? 'AI returned empty response' : 'OpenRouter API key missing in settings');
+        logDebug('ERROR', `[Campaign AI] ❌ Message generation aborted for ${partnerName}: ${failReason}. Zero-default policy enforced.`);
 
         lastReplyMeta = {
             isAI: false,
-            source: 'Default Fallback Template',
+            error: true,
+            source: 'None (AI Inactive/Failed)',
             model: model,
-            chars: finalText.length,
+            chars: 0,
             partnerName: partnerName,
             reason: failReason
         };
 
-        updateStatus(`⚠️ [Default Template] For ${partnerName} (${failReason.slice(0, 35)})`, 'warn');
-        return finalText;
+        // Prominently notify user that AI is inactive and generation is halted
+        showAiInactiveAlert(
+            'Campaign AI Inactive / Failed',
+            `Cannot generate message for ${partnerName}: ${failReason}. No default message will be sent.`,
+            true
+        );
+
+        return null; // ZERO default messages sent!
     }
 
     
@@ -1783,13 +1887,22 @@ Strict Requirements:
                     }
                 }
 
-                // Step 6: Generate corresponding message based on last 3 chats
+                // Step 6: Generate corresponding message based on last 3 chats (Strict AI-Only)
                 logDebug('INFO', `[${phaseLabel}] Generating AI reply for ${partnerName}...`);
                 updateStatus(`[${phaseLabel}] Generating message for ${partnerName}...`);
                 const replyText = await generateCampaignReply(chatInfo);
                 if (!replyText || replyText.length < 15) {
-                    logDebug('WARN', `[Campaign] Generated text too short for ${partnerName}, skipping.`);
-                    continue;
+                    logDebug('ERROR', `[Campaign] AI reply generation failed or inactive for ${partnerName}. Halting campaign immediately to prevent default messages.`);
+                    updateStatus(`⛔ [Campaign Paused] AI is inactive or failed (${lastReplyMeta.reason || 'No AI response'}). Campaign paused.`, true);
+                    showAiInactiveAlert(
+                        'Campaign Paused (AI Inactive)',
+                        `AI reply generation failed for ${partnerName} (${lastReplyMeta.reason || 'API error'}). Campaign has been paused to guarantee no default messages are sent.`,
+                        true
+                    );
+                    stopCampaignRequested = true;
+                    isRunning = false;
+                    setButtonState(false);
+                    break;
                 }
 
                 // Insert into chat textarea
@@ -1824,23 +1937,19 @@ Strict Requirements:
                     textToSend = reviewRes.text || activeTextarea.value || replyText;
                 }
 
-                // Step 7: Send safely - GUARANTEED ANTI-LETTER PROTECTION
-                if (lastReplyMeta.isAI) {
-                    updateStatus(`🤖 [AI: ${lastReplyMeta.model.split('/').pop()}] Sending to ${partnerName} (${textToSend.length} chars)...`, 'ai');
-                    logDebug('SUCCESS', `[Send Message] 🤖 Sent AI-generated message (${lastReplyMeta.model}) to ${partnerName}: "${textToSend}"`);
-                } else {
-                    updateStatus(`⚠️ [Default Reply] Sending template to ${partnerName} (${textToSend.length} chars) [${lastReplyMeta.reason.slice(0, 25)}]`, 'warn');
-                    logDebug('WARN', `[Send Message] ⚠️ Sent DEFAULT FALLBACK template to ${partnerName} (Reason: ${lastReplyMeta.reason}): "${textToSend}"`);
+                // Step 7: Send safely - GUARANTEED ANTI-LETTER PROTECTION (100% STRICT AI ONLY)
+                if (!lastReplyMeta.isAI) {
+                    logDebug('ERROR', `[Send Message] Refusing to send message to ${partnerName}: Message is not AI-generated!`);
+                    updateStatus(`❌ Refusing send to ${partnerName}: Non-AI message blocked!`, true);
+                    break;
                 }
+                updateStatus(`🤖 [AI: ${lastReplyMeta.model.split('/').pop()}] Sending to ${partnerName} (${textToSend.length} chars)...`, 'ai');
+                logDebug('SUCCESS', `[Send Message] 🤖 Sent AI-generated message (${lastReplyMeta.model}) to ${partnerName}: "${textToSend}"`);
                 await sendChatMessageSafely(activeTextarea, partnerName);
                 recordCampaignSend(cardKey);
                 
                 // Show confirmation tag
-                if (lastReplyMeta.isAI) {
-                    updateStatus(`🤖 [AI Sent] Sent to ${partnerName} (${textToSend.length} chars) ✅`, 'ai');
-                } else {
-                    updateStatus(`⚠️ [Default Sent] Sent template to ${partnerName} (${textToSend.length} chars) ✅`, 'warn');
-                }
+                updateStatus(`🤖 [AI Sent] Sent to ${partnerName} (${textToSend.length} chars) ✅`, 'ai');
                 passProcessed++;
                 logDebug('SUCCESS', `[${phaseLabel}] Successfully sent message to ${partnerName}!`);
                 updateStatus(`[${phaseLabel}] Sent message to ${partnerName} (${textToSend.length} chars).`);
@@ -2850,31 +2959,30 @@ Strict Requirements:
                         content = enforceCharacterLimit(cleanReplyText(content), targetChars);
                         logDebug('SUCCESS', `[Instant Responder] 🤖 Generated compelling ${eventType} reply for ${partnerName}: "${content.slice(0, 60)}..."`);
                         return content;
+                    } else {
+                        logDebug('ERROR', `[Instant Responder] OpenRouter returned empty response for ${partnerName}.`);
                     }
+                } else {
+                    const errData = await res.json().catch(() => ({}));
+                    const errMsg = errData.error?.message || `HTTP ${res.status} (${res.statusText})`;
+                    logDebug('ERROR', `[Instant Responder] OpenRouter API error for ${partnerName}: ${errMsg}`);
                 }
             } catch (err) {
-                logDebug('WARN', `[Instant Responder] OpenRouter API error: ${err.message}. Using high-conversion template.`);
+                logDebug('ERROR', `[Instant Responder] OpenRouter exception for ${partnerName}: ${err.message}`);
             }
+        } else {
+            logDebug('WARN', `[Instant Responder] OpenRouter key missing for ${eventType} responder.`);
         }
 
-        // High-Conversion Offline Fallback Templates
-        const winkTemplates = [
-            `A wink? Bold move... but tell me, is that your subtle way of saying I caught your eye, or are you just shy? 😉`,
-            `Don't tell me a wink is all I get from a handsome man like you. Are you testing the waters, or do you have a real opening line ready? 😏`,
-            `A wink already? Now you've got my attention... tell me what caught your eye first so I know what I'm dealing with! 💋`,
-            `Caught your wink 😏 Does that mean you're making the first move, or are you waiting for me to take the lead?`
-        ];
-
-        const likeTemplates = [
-            `I saw that like... now confess: was it the smile, the eyes, or did something else catch your attention? Don't leave me wondering! 😉`,
-            `Caught you liking my profile! Tell me the truth, what made you stop and like it? 💋`,
-            `I noticed you liked my photos... are you always this quiet when someone catches your eye, or are you waiting for me to say hello first? 😏`,
-            `I see someone with great taste just liked my profile 😏 Tell me what caught your eye first!`
-        ];
-
-        const list = eventType === 'wink' ? winkTemplates : likeTemplates;
-        const picked = list[Math.floor(Math.random() * list.length)];
-        return enforceCharacterLimit(cleanReplyText(picked), targetChars);
+        // STRICT ZERO-DEFAULT POLICY: If AI generation fails, NEVER send canned fallback templates!
+        const failReason = hasKey ? 'OpenRouter API failed or returned empty' : 'OpenRouter API key missing in settings';
+        logDebug('ERROR', `[Instant Responder] ❌ Reply aborted for ${partnerName}'s ${eventType}: ${failReason}. No default message sent.`);
+        showAiInactiveAlert(
+            'Instant Responder (AI Inactive)',
+            `Cannot reply to ${partnerName}'s ${eventType}: ${failReason}. Default messages are disabled, response was aborted.`,
+            false
+        );
+        return null;
     }
 
     let isProcessingNotification = false;
@@ -2959,10 +3067,11 @@ Strict Requirements:
             }
         }
 
-        logDebug('INFO', `[Instant Responder] Generating high-conversion reply to ${eventType} for ${partnerName}...`);
+        logDebug('INFO', `[Instant Responder] Generating AI reply to ${eventType} for ${partnerName}...`);
         const replyText = await generateLikeWinkCompelReply(details, chatInfo);
         if (!replyText || replyText.length < 15) {
-            logDebug('WARN', `[Instant Responder] Reply text too short for ${partnerName}.`);
+            logDebug('WARN', `[Instant Responder] Reply text unavailable or AI inactive for ${partnerName} (${eventType}). Aborting.`);
+            updateStatus(`⚠️ [Instant Skipped] AI inactive for ${partnerName} (${eventType}). No message sent.`, 'warn');
             return;
         }
 
@@ -3152,7 +3261,12 @@ Strict Requirements:
     async function requestOpenRouterReplies(chatData, tone, customInstruction = '') {
         const apiKey = getOpenRouterKey();
         if (!isValidOpenRouterKey(apiKey)) {
-            console.warn('[OpenRouter] Key missing or invalid format (expected sk-or-v1-...). Using fallback suggestions.');
+            console.warn('[OpenRouter] Key missing or invalid format (expected sk-or-v1-...).');
+            showAiInactiveAlert(
+                'AI Inactive',
+                'OpenRouter API key is missing or invalid in Universal Settings. Please configure your key to generate messages.',
+                false
+            );
             return null;
         }
 
@@ -3385,96 +3499,8 @@ Example:
     }
 
     function getFallbackSuggestions(chatData, tone) {
-        const name = chatData.partnerName;
-        const target = getTargetChars();
-        const lastText = chatData.lastUserMsg ? chatData.lastUserMsg.text : (chatData.lastMsg ? chatData.lastMsg.text : '');
-
-        if (chatData.isEmptyChat) {
-            if (target >= 800) {
-                return [
-                    `Hello ${name}, I couldn't help but notice that you were looking through my profile earlier today, and honestly, seeing your handsome face made me smile. I was just taking a little break with my cup of coffee, and when I saw you stopped by, curiosity got the better of me so I decided to check out your page too. Life is funny sometimes with how paths cross, and even though we haven't spoken yet, there is something warm and genuine about your energy that stood out to me. I usually wait for a gentleman to make the first move, but today I thought to myself, why wait when someone interesting is right there? I really enjoy getting to know what makes someone tick beneath the surface, what dreams keep them inspired, and what kind of little everyday adventures bring a smile to their face. Since you took the time to stop by my photos, I figured it was only fair that I say hello and introduce myself properly. I would love to know what made you stop by my profile, and more importantly, what is one thing about you that pictures could never tell me? ☕✨`
-                ];
-            }
-            if (target >= 250) {
-                return [
-                    `I caught you looking at my profile, ${name}! 😉 I have to say, you have wonderful taste, but you can't just peek at my pictures and disappear without saying hello. Tell me handsome, what caught your eye first about my profile? ✨`,
-                    `Well hello there, ${name}! I noticed you stopped by my page today, and I couldn't resist dropping in to see who was checking me out. I'm glad you did, but now you have me curious. What are you looking for on here? 🍷`,
-                    `Are you just browsing or did something specific catch your attention, ${name}? 🙈 I saw you visited my profile, and I was secretly hoping you would write to me first. Tell me, what is your favorite way to spend an evening? 😊`,
-                    `Hey ${name}! I saw you checked out my photos today and I wanted to say hi before you vanished into the crowd. You seem to have a really great vibe! Tell me, what is one thing that always makes you smile? ✨`,
-                    `Hi ${name}! Couldn't help noticing you on my profile today. I love meeting new people who appreciate genuine connection. How has your week been going so far? 🌸`
-                ];
-            }
-            return [
-                `Caught you looking at my profile, ${name}! 😉 What caught your eye first?`,
-                `I saw you stopped by my page today, ${name}! How has your day been? ✨`,
-                `Don't just peek and disappear, ${name}! What are you looking for on here? 🙈`
-            ];
-        }
-
-        // Dedicated follow-up fallbacks when we sent the last message and he hasn't answered yet
-        const isLastFromMe = chatData.lastMsg && chatData.lastMsg.role === 'me';
-        if (isLastFromMe) {
-            if (target >= 800) {
-                return [
-                    `Hello ${name}, I was just sitting here having my afternoon coffee and thinking about our little chat earlier. I know how fast-paced life can get and how easy it is for days to get swallowed up with responsibilities and work, but I truly wanted to take a moment out of my day to send a warm smile your way. You struck me as someone very genuine, and in a world where everyone is always in a hurry, finding someone who values authentic connection is rare. I didn't want our conversation to just fade away into the quiet, so I thought I'd check in and see how the rest of your week has been treating you. Tell me handsome, what has been the highlight of your week so far, or what is one little thing you are looking forward to this weekend? ☕✨`
-                ];
-            }
-            if (target >= 250) {
-                return [
-                    `I see you being quiet over there, ${name}! 😉 Don't tell me I already left you speechless... what kept you busy today? Tell me handsome, what's been the highlight of your week so far? ✨`,
-                    `Hey ${name}, just checking in on you! You crossed my mind earlier today and I wanted to say hi. Hope your day has been treating you well! What are you up to today? 🌸`,
-                    `A penny for your thoughts, ${name}? 😊 I was hoping to hear from you today. Tell me, what is one thing that put a smile on your face today? 🍷`,
-                    `Hey handsome! Still recovering from a busy day or just taking your time? 😉 What is your absolute favorite way to unwind after a long day? ✨`
-                ];
-            }
-            return [
-                `I see you being quiet over there, ${name}! 😉 What kept you busy today?`,
-                `Hey ${name}, just checking in! How has your day been going? ✨`,
-                `A penny for your thoughts, ${name}? 😊 Hope you are having a wonderful day!`
-            ];
-        }
-
-        // Context-aware fallback: When he asks to know more about her / who she is
-        if (/know\s+more|about\s+you|tell\s+me|who\s+are\s+you|what\s+do\s+you\s+do/i.test(lastText)) {
-            if (target >= 800) {
-                return [
-                    `My sweet ${name}, seeing that you want to know more about me truly brought the warmest smile to my face. I'm someone who loves the simple joys in life: brewing a fresh cup of coffee in the morning, exploring quiet places, laughing until my stomach hurts, and having real conversations where time just slips away. I think life is too short for superficial chats, so I value someone who is genuine, kind-hearted, and passionate about what they do. Seeing that you liked my profile made me really happy, because there was something about your kind smile and your energy that immediately stood out to me as well. I'm an open book for someone who takes the time to truly listen, and I would love nothing more than to share my world with you and discover yours too. So tell me, my handsome friend, since you want to get to know me, what was the first thing about my profile that made you stop and want to reach out to me? ☕✨`
-                ];
-            }
-            if (target >= 250) {
-                return [
-                    `I'd love that, ${name}! 😊 I love good coffee, weekend road trips, and real conversations where time slips away. Seeing you like my page made my day! Tell me handsome, what caught your attention first about me? ✨`,
-                    `That put a big smile on my face, ${name}! I'm an open book for someone genuine. I love cozy evenings, great music, and good vibes. I'm glad you reached out, but tell me, what is one thing I should know about you first? 🍷`,
-                    `I'm happy to tell you everything, ${name}! I consider myself a playful romantic who values real chemistry over small talk. Since you liked my profile, tell me, what kind of connection are you hoping to find on here? 😉`
-                ];
-            }
-            return [
-                `I'd love that, ${name}! I love good coffee, fun adventures, and great talks. What caught your eye first? 😊`,
-                `That made me smile, ${name}! I'm an open book for someone genuine. What should I know about you first? ✨`,
-                `I'm happy to tell you all about me, ${name}! Tell me handsome, what are you hoping to find on here? 🍷`
-            ];
-        }
-
-        // Standard context fallback
-        if (target >= 800) {
-            return [
-                `My sweet ${name}, I was just sitting here daydreaming and you crossed my mind in the most wonderful way. Sometimes in the middle of a busy day, someone comes along who brings a quiet spark to your world, and honestly, you have been that spark for me lately. I find myself smiling at my phone whenever I see your name pop up, wondering what you are doing, what thoughts are going through your mind, and whether you ever pause for a second and think about me too. There is something uniquely special about the chemistry between two people even across distance, and I love the feeling of getting to know your heart little by little. Life gets so loud and rushed, but taking this quiet moment to write to you feels like the best part of my day. I packed my schedule with so many things, yet none of it compares to the warmth of having a real conversation with someone who actually understands me. I want to know everything about you, your passions, your quiet dreams, and what truly makes you happy when nobody else is watching. You deserve someone who listens to you with open arms and a genuine smile. So tell me, my handsome friend, if you could escape everything right now for just one evening, where in the world would you want us to disappear together? ✈️`
-            ];
-        }
-
-        if (target >= 250) {
-            return [
-                `Hey ${name}, I'm really glad to see your message! 😊 I've had a busy day but your text definitely made me smile. Tell me handsome, what have you been up to today, anything exciting? ✨`,
-                `I was secretly hoping I'd hear from you today, ${name}! Life is so much better when you have someone interesting to share your day with. What is the best thing that happened to you today? 😉`,
-                `It's so good chatting with you, ${name}! I love meeting people who bring good positive energy. Tell me, what is your absolute favorite way to unwind after a long day? 🍷`
-            ];
-        }
-
-        return [
-            `Hey ${name}! I'm glad you texted me. How has your day been so far? ✨`,
-            `I was just thinking about you, ${name}! What are you up to right now? 😊`,
-            `Good to hear from you, ${name}! What is one thing that made you smile today? 😉`
-        ];
+        // PERMANENTLY REMOVED in v5.9: Zero default/fallback messages policy.
+        return [];
     }
 
     function insertIntoChatInput(text) {
@@ -4257,20 +4283,23 @@ Example:
 
         let suggestions = [];
 
+        let studioError = null;
         if (hasKey) {
             try {
                 const aiReplies = await requestOpenRouterReplies(chatData, currentTone, customInstruction);
                 if (aiReplies && aiReplies.length > 0) {
                     suggestions = aiReplies;
+                } else {
+                    studioError = 'OpenRouter returned empty suggestions. Check model or prompt.';
                 }
             } catch (err) {
                 console.error('[Writeup Studio]', err);
+                studioError = err.message;
                 updateStatus(`[Studio AI Error] ${err.message}`, true);
             }
-        }
-
-        if (!suggestions || suggestions.length === 0) {
-            suggestions = getFallbackSuggestions(chatData, currentTone);
+        } else {
+            studioError = 'OpenRouter API key missing or invalid in Universal Settings.';
+            showAiInactiveAlert('AI Inactive', 'OpenRouter API key is missing. Set your key in Settings to generate writeups.', false);
         }
 
         if (genBtn) {
@@ -4278,10 +4307,10 @@ Example:
             genBtn.textContent = '⚡ Generate Writeup';
         }
 
-        renderStudioResults(chatData, suggestions);
+        renderStudioResults(chatData, suggestions, studioError);
     }
 
-    function renderStudioResults(chatData, suggestions) {
+    function renderStudioResults(chatData, suggestions, studioError = null) {
         if (!writeupResultsWrap) return;
         writeupResultsWrap.innerHTML = '';
 
@@ -4289,7 +4318,17 @@ Example:
         const partnerName = chatData.partnerName || 'Honey';
 
         if (!suggestions || suggestions.length === 0) {
-            writeupResultsWrap.innerHTML = `<div style="text-align:center; padding:10px; color:#f87171; font-size:11px;">⚠️ No suggestions generated. Click Generate to try again.</div>`;
+            const errorDesc = studioError || 'AI is inactive or failed to generate suggestions.';
+            writeupResultsWrap.innerHTML = `
+                <div style="text-align:left; padding:12px; color:#fca5a5; background:rgba(153,27,27,0.3); border:1px solid #ef4444; border-radius:6px; font-size:11px; line-height:1.4;">
+                    <div style="font-weight:bold; margin-bottom:4px; display:flex; align-items:center; gap:6px;">
+                        <span>🚨</span> <span>AI Inactive / Error</span>
+                    </div>
+                    <div>${errorDesc}</div>
+                    <div style="margin-top:6px; color:#fcd34d; font-size:10px;">
+                        ℹ️ All default/fallback messages have been permanently removed. Configure your OpenRouter API key in settings to enable genuine AI generation.
+                    </div>
+                </div>`;
             return;
         }
 
