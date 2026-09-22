@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Auto Click Sequence & OpenRouter AI Replies
 // @namespace    http://tampermonkey.net/
-// @version      5.9
-// @description  Strict Zero-Default AI Messages (100% Genuine OpenRouter Generation, Automatic AI-Inactive User Alert & Campaign Pause), 5-Message Context Window, Smart 3-Message Photo Request Trigger, Instant Like & Wink Auto-Responder (Column 4 Live Notifications), Image/Photo Chat Detection, Real-time Review Regeneration, 100% Dynamic Multi-Profile Persona Auto-Detection, and Standalone Floating AI Writeup Studio
+// @version      6.1
+// @description  Custom Instruction & Saved Presets Manager (Create, Save & 1-Click Load Custom Directives), Strict Zero-Default AI Messages (100% Genuine OpenRouter Generation, Automatic AI-Inactive User Alert & Campaign Pause), 5-Message Context Window, Smart 3-Message Photo Request Trigger, Instant Like & Wink Auto-Responder (Column 4 Live Notifications), Image/Photo Chat Detection, Real-time Review Regeneration, 100% Dynamic Multi-Profile Persona Auto-Detection, and Standalone Floating AI Writeup Studio
 // @match        *://*.alpha.date/*
 // @match        *://alpha.date/*
 // @updateURL    https://raw.githubusercontent.com/Amazino33/tampermonkey-scripts/main/userscript.user.js
@@ -23,7 +23,7 @@
 
         window.addEventListener('visibilitychange', (e) => e.stopImmediatePropagation(), true);
         window.addEventListener('blur', (e) => e.stopImmediatePropagation(), true);
-    } catch (err) {}
+    } catch (err) { }
 
     // ==========================================
     // 0. DIAGNOSTIC LOGGING & EVENT ENGINE
@@ -46,7 +46,7 @@
 
         try {
             sessionStorage.setItem('alpha_debug_logs', JSON.stringify(debugLogs.slice(-100)));
-        } catch (e) {}
+        } catch (e) { }
 
         const colorMap = {
             'INFO': 'color: #38bdf8;',
@@ -80,7 +80,7 @@
                 osc.start();
                 osc.stop(ctx.currentTime + 0.36);
             }
-        } catch (e) {}
+        } catch (e) { }
 
         // 2. Native browser notification if permission granted
         try {
@@ -90,7 +90,7 @@
                     icon: 'https://alpha.date/favicon.ico'
                 });
             }
-        } catch (e) {}
+        } catch (e) { }
 
         // 3. High-visibility top-of-screen alert banner
         try {
@@ -174,12 +174,12 @@
                     if (alertBox && alertBox.parentNode) alertBox.remove();
                 }, 12000);
             }
-        } catch (e) {}
+        } catch (e) { }
 
         // 4. Update status bar and diagnostics
         try {
             updateStatus(`🚨 [AI INACTIVE] ${title}: ${message}`, true);
-        } catch (e) {}
+        } catch (e) { }
         logDebug('ERROR', `🚨 [AI Inactive] ${title}: ${message}`);
     }
 
@@ -512,7 +512,7 @@
         }
     }
 
-    
+
     // ==========================================
     // 3B. RECURRING INACTIVITY CAMPAIGNS & HOURLY RATE LIMITER
     // ==========================================
@@ -579,7 +579,7 @@
             sends.push(Date.now());
             localStorage.setItem(HOURLY_SENDS_LOG_KEY, JSON.stringify(sends));
             updateCampaignCountdownUI();
-        } catch (e) {}
+        } catch (e) { }
     }
 
     function getHourlySendCount() {
@@ -599,6 +599,18 @@
             return { reached: true, count, limit, nextAvailableMs };
         }
         return { reached: false, count, limit, nextAvailableMs: 0 };
+    }
+
+    // Compatibility shim — executeInstantNotificationResponse calls this name.
+    // Do not remove.
+    function checkHourlyMessageQuota() {
+        const r = isHourlyLimitReached();
+        return {
+            allowed: !r.reached,
+            count: r.count,
+            limit: r.limit,
+            nextAvailableMs: r.nextAvailableMs
+        };
     }
 
     function getCampaignDelayMs() {
@@ -876,7 +888,7 @@
             }
             sessionStorage.setItem(RECENT_SENDS_STORAGE_KEY, JSON.stringify(sends));
             logDebug('SUCCESS', `Recorded campaign send for: ${contactKey}`);
-        } catch (e) {}
+        } catch (e) { }
     }
 
     function wasRecentlyMessagedByCampaign(contactKey, thresholdHours = getCampaignIntervalHours()) {
@@ -1308,7 +1320,7 @@
                         logDebug('INFO', `Dispatched submit event for ${partnerName}.`);
                     }
                     await sleep(400);
-                } catch (e) {}
+                } catch (e) { }
             }
         }
 
@@ -1368,7 +1380,7 @@
                 else activeTextarea.value = '';
                 activeTextarea.dispatchEvent(new Event('input', { bubbles: true }));
                 activeTextarea.dispatchEvent(new Event('change', { bubbles: true }));
-            } catch (e) {}
+            } catch (e) { }
         }
 
         // 5. Anti-Letter Navigation Guard: Ensure we did NOT leave the chat page
@@ -1549,6 +1561,16 @@ Strict Requirements:
                     userPrompt = `Write a captivating opening icebreaker to ${partnerName} who visited my profile. Keep it SHORT, STRICTLY UNDER ${targetChars} characters (max ${maxWords} words), ending with a question.`;
                 }
 
+                // Active Campaign Custom Instruction (v6.0)
+                if (isCampaignCustomEnabled()) {
+                    const campCustom = getCampaignCustomInstruction().trim();
+                    if (campCustom) {
+                        logDebug('INFO', `[Campaign AI] ✍️ Incorporating active campaign custom instruction: "${campCustom}"`);
+                        systemPrompt += `\n\nCRITICAL USER CUSTOM INSTRUCTION:\nThe user has specified this custom theme/instruction for replies:\n"${campCustom}"\nYou MUST specifically weave this topic/instruction naturally into your reply while maintaining your charming persona!`;
+                        userPrompt += ` Follow this custom instruction: "${campCustom}".`;
+                    }
+                }
+
                 logDebug('INFO', `[Campaign AI] Sending request to OpenRouter API (Model: ${model})...`);
                 updateStatus(`[AI] Requesting reply from ${model}...`);
 
@@ -1662,7 +1684,7 @@ Strict Requirements:
         return null; // ZERO default messages sent!
     }
 
-    
+
     // Step 3.4B: Parse remaining message limit from Column 3 (Skip user if <= 1 messages left)
     function getRemainingMessageLimit() {
         const limitEl = document.querySelector('[data-testid="message-limit"], [class*="chat_typing_right-"], [class*="message-limit"]');
@@ -1675,9 +1697,9 @@ Strict Requirements:
             return { hasLimit: false, count: Infinity, skip: false, raw: '' };
         }
 
-        const match = text.match(/(\d+)\s*message/i) || 
-                      text.match(/message[s]?\s*(?:left)?\s*[:\-]?\s*(\d+)/i) || 
-                      text.match(/^(\d+)\s*left/i);
+        const match = text.match(/(\d+)\s*message/i) ||
+            text.match(/message[s]?\s*(?:left)?\s*[:\-]?\s*(\d+)/i) ||
+            text.match(/^(\d+)\s*left/i);
 
         if (!match) {
             return { hasLimit: false, count: Infinity, skip: false, raw: text };
@@ -1947,7 +1969,7 @@ Strict Requirements:
                 logDebug('SUCCESS', `[Send Message] 🤖 Sent AI-generated message (${lastReplyMeta.model}) to ${partnerName}: "${textToSend}"`);
                 await sendChatMessageSafely(activeTextarea, partnerName);
                 recordCampaignSend(cardKey);
-                
+
                 // Show confirmation tag
                 updateStatus(`🤖 [AI Sent] Sent to ${partnerName} (${textToSend.length} chars) ✅`, 'ai');
                 passProcessed++;
@@ -2009,7 +2031,7 @@ Strict Requirements:
         const totalProcessed = onlineResult.processed + offlineResult.processed;
         const totalSkipped = onlineResult.skipped + offlineResult.skipped;
         const finishMsg = `[${sectionName}] Complete! Online: ${onlineResult.processed} sent (${onlineResult.skipped} skipped) | Offline: ${offlineResult.processed} sent (${offlineResult.skipped} skipped).`;
-        
+
         updateStatus(finishMsg);
         logDebug('SUCCESS', finishMsg);
 
@@ -2238,7 +2260,7 @@ Strict Requirements:
         }
     }
 
-// ==========================================
+    // ==========================================
     // 4. OPENROUTER AI & FLEXIBLE TARGET LENGTH
     // ==========================================
     const OPENROUTER_KEY_STORAGE = 'alpha_openrouter_api_key';
@@ -2450,19 +2472,25 @@ Strict Requirements:
         return null;
     }
 
+    // Returns the currently-select column 2 chat card
+    // The chat marks "selected" with a trailing `active-xxxxx` class;
+    // the `in_active-xxxxx` class is just an online indicator and must be ignored.
+    function findActiveChatCard() {
+        const cards = document.querySelectorAll('[class*="clmn_2_chat_block_item-"]');
+        for (const card of cards) {
+            // \b ensures we match `active-TKetoc` but not `in_active-Belx79`
+            if (/\bactive-[A-Za-z0-9]+/.test(card.className)) {
+                return card;
+            }
+        }
+
+        return null;
+    }
+
     // 100% Dynamic Multi-Source Profile Persona Detection Engine
     function detectActiveProfileName(cardEl = null) {
         // 1. Check Column 2 Contact Card (passed in or currently active in list)
-        const targetCard = cardEl || document.querySelector(
-            '[class*="clmn_2_chat_block_item-"][class*="active"], ' +
-            '[class*="clmn_2_chat_block_item-"][class*="selected"], ' +
-            '[class*="clmn_2_chat_block_item-"][class*="current"], ' +
-            '[class*="clmn_2_chat_block_item-"][aria-selected="true"], ' +
-            '[class*="clmn_2"] [class*="active"], ' +
-            '[class*="clmn_2"] [class*="selected"], ' +
-            '[class*="clmn_2"] [class*="current-"], ' +
-            '[class*="item_wrap-"][class*="active"]'
-        );
+        const targetCard = cardEl || findActiveChatCard();
         if (targetCard) {
             const cardPName = getCardProfileName(targetCard);
             if (cardPName && isValidProfileName(cardPName)) return cardPName;
@@ -2621,6 +2649,10 @@ Strict Requirements:
 
     // Delegated instant click handler for profiles and contact cards
     document.addEventListener('click', (e) => {
+        // Guard: window/document have no .closest() — synthetic events from
+        // the Keep-Alive system dispatch clicks on them. Skip those.
+        if (!e.target || typeof e.target.closest !== 'function') return;
+
         // A. Profile selection in Column 1 (drawer or active wrap)
         const profileEl = e.target.closest(
             '[data-testid="profile-name"], [class*="clmn_1_mm_chat_list_item-"], [class*="clmn_1_profile_wrap-"], [class*="clmn_1_profile_btn-"], [class*="profile_item-"]'
@@ -2652,6 +2684,13 @@ Strict Requirements:
             if (cardPartnerName) {
                 updateSelectedPartnerUI(cardPartnerName, cardProfName);
             }
+            // React applies the active-XXXX class and loads Column 3 asynchronously.
+            // Re-verify after the DOM settles so the studio shows the new chat.
+            [150, 400, 900, 1600].forEach((delay) => {
+                setTimeout(() => {
+                    try { checkAndUpdateActiveChat(true); } catch (err) { }
+                }, delay);
+            });
         }
     }, true);
 
@@ -2664,10 +2703,18 @@ Strict Requirements:
         // 1. Check Column 3 Header (top of chat) for partner details
         const clmn3 = document.querySelector('[class*="clmn_3"]');
         if (clmn3) {
-            const headerEl = clmn3.querySelector('[class*="clmn_3_chat_header-"], [class*="chat_header-"], [class*="clmn_3_header-"], header, [class*="top_bar-"]');
+            const headerEl = clmn3.querySelector(
+                '[data-testid="chat-header"], ' +
+                '[class*="chat_head-"], ' +
+                '[class*="clmn_3_chat_header-"], ' +
+                '[class*="chat_header-"], ' +
+                '[class*="clmn_3_header-"], ' +
+                '[class*="top_bar-"]'
+            );
             if (headerEl) {
-                const nameEl = headerEl.querySelector('[data-testid="man-name"], [data-testid="user-name"], [class*="middle_name-"], [class*="name-"], [class*="user-"], [data-testid*="name"], h1, h2, h3, h4');
-                if (nameEl && nameEl.textContent.trim().length > 1 && nameEl.textContent.trim().length < 35) {
+                const nameEl = headerEl.querySelector(
+                    '[data-testid="man-name"], [data-testid="user-name"], [class*="chat_head_profile_name-"], [class*="middle_name-"]'
+                ); if (nameEl && nameEl.textContent.trim().length > 1 && nameEl.textContent.trim().length < 35) {
                     const clean = cleanNameString(nameEl.textContent);
                     if (isValidProfileName(clean)) partnerName = clean;
                 }
@@ -2687,16 +2734,7 @@ Strict Requirements:
         }
 
         // 2. Check Column 2 Active Item or explicitly passed cardEl
-        const activeChatItem = cardEl || document.querySelector(
-            '[class*="clmn_2_chat_block_item-"][class*="active"], ' +
-            '[class*="clmn_2_chat_block_item-"][class*="selected"], ' +
-            '[class*="clmn_2_chat_block_item-"][class*="current"], ' +
-            '[class*="clmn_2_chat_block_item-"][aria-selected="true"], ' +
-            '[class*="clmn_2"] [class*="active"], ' +
-            '[class*="clmn_2"] [class*="selected"], ' +
-            '[class*="clmn_2"] [class*="current-"], ' +
-            '[class*="item_wrap-"][class*="active"]'
-        );
+        const activeChatItem = cardEl || findActiveChatCard();
         if (activeChatItem) {
             const cardName = getCardPartnerName(activeChatItem);
             if (cardName && (!partnerName || partnerName === 'Honey')) {
@@ -2800,10 +2838,86 @@ Strict Requirements:
         }
         try {
             localStorage.setItem(ALPHA_RESPONDED_NOTIFS_KEY, JSON.stringify(Array.from(respondedNotifIds)));
-        } catch (e) {}
+        } catch (e) { }
     }
 
     const partnerLastNotifRespondedTime = new Map();
+
+    // ----------------------------------------------------------------
+    // VIEW-SPECIFIC COOLDOWN
+    // Views fire repeatedly from the same man (every profile open).
+    // We suppress repeat view replies for a longer window than likes/winks.
+    // ----------------------------------------------------------------
+    const ALPHA_VIEW_COOLDOWN_HOURS_KEY = 'alpha_view_cooldown_hours_v1';
+
+    function getViewCooldownHours() {
+        const stored = localStorage.getItem(ALPHA_VIEW_COOLDOWN_HOURS_KEY);
+        if (stored === null) return 24; // 24h default
+        const val = parseFloat(stored);
+        return isNaN(val) || val < 0 ? 24 : val;
+    }
+
+    function setViewCooldownHours(hours) {
+        localStorage.setItem(ALPHA_VIEW_COOLDOWN_HOURS_KEY, String(hours));
+    }
+
+    // ----------------------------------------------------------------
+    // VIEW DETECTION MAP
+    // Tracks the last time each partner viewed your profile.
+    // Persisted across reloads so the studio can keep the AI informed.
+    // ----------------------------------------------------------------
+    const ALPHA_VIEW_HISTORY_KEY = 'alpha_partner_view_history_v1';
+    const VIEWED_RECENTLY_HOURS = 48;   // window for "he viewed recently"
+
+    const partnerLastViewRespondedTime = (() => {
+        const map = new Map();
+        try {
+            const raw = localStorage.getItem(ALPHA_VIEW_HISTORY_KEY);
+            if (raw) {
+                const obj = JSON.parse(raw);
+                const cutoff = Date.now() - (VIEWED_RECENTLY_HOURS * 3600 * 1000);
+                for (const k in obj) {
+                    const ts = Number(obj[k]);
+                    if (Number.isFinite(ts) && ts >= cutoff) map.set(k, ts);
+                }
+            }
+        } catch (e) { }
+        return map;
+    })();
+
+    function persistViewHistory() {
+        try {
+            const obj = {};
+            for (const [k, v] of partnerLastViewRespondedTime) obj[k] = v;
+            localStorage.setItem(ALPHA_VIEW_HISTORY_KEY, JSON.stringify(obj));
+        } catch (e) { }
+    }
+
+    function isPartnerInViewCooldown(partnerName) {
+        const hours = getViewCooldownHours();
+        if (hours <= 0) return false;
+        if (!partnerName) return false;
+        const key = partnerName.toLowerCase().trim();
+        const lastTime = partnerLastViewRespondedTime.get(key);
+        if (!lastTime) return false;
+        return (Date.now() - lastTime) < (hours * 3600 * 1000);
+    }
+
+    function recordPartnerViewResponded(partnerName) {
+        if (!partnerName) return;
+        partnerLastViewRespondedTime.set(partnerName.toLowerCase().trim(), Date.now());
+        persistViewHistory();
+    }
+
+    // "Has this partner viewed my profile within the recent window?"
+    // Used by the studio to pick the right icebreaker framing.
+    function hasPartnerViewedRecently(partnerName) {
+        if (!partnerName) return false;
+        const key = partnerName.toLowerCase().trim();
+        const t = partnerLastViewRespondedTime.get(key);
+        if (!t) return false;
+        return (Date.now() - t) < (VIEWED_RECENTLY_HOURS * 3600 * 1000);
+    }
 
     function isPartnerInNotifCooldown(partnerName) {
         if (!partnerName) return false;
@@ -2819,31 +2933,118 @@ Strict Requirements:
         partnerLastNotifRespondedTime.set(partnerName.toLowerCase().trim(), Date.now());
     }
 
+    // ----------------------------------------------------------------
+    // INSTANT LIKE & WINK RESPONDER — HARDENED WATCHER (v2)
+    // ----------------------------------------------------------------
+
+    // Stable identifier for a notification, even if the site omits an id.
+    function buildNotifKey(notifEl, details) {
+        if (details && details.notifId) return details.notifId;
+        // Fall back to a content hash: partner + event type + raw time text
+        const parts = [
+            (details && details.partnerName) || '',
+            (details && details.eventType) || '',
+            (details && details.timeStr) || '',
+            (notifEl && (notifEl.textContent || '').trim().slice(0, 80)) || ''
+        ];
+        let hash = 0;
+        const s = parts.join('|');
+        for (let i = 0; i < s.length; i++) {
+            hash = (hash * 31 + s.charCodeAt(i)) | 0;
+        }
+        return 'auto_' + Math.abs(hash).toString(36);
+    }
+
     function extractNotificationDetails(notifEl) {
         if (!notifEl) return null;
 
         const notifId = notifEl.getAttribute('data-testid') || notifEl.id || '';
 
-        const nameEl = notifEl.querySelector('[data-testid="notification-user-name"], [class*="notification_user_name-"], [class*="clmn_4_block_paid_item_name-"]');
-        const rawName = nameEl ? (nameEl.textContent || '').trim() : '';
-        const partnerName = cleanNameString(rawName) || 'Honey';
-
-        const contentEl = notifEl.querySelector('[data-testid="notification-content"], [class*="notification_content-"], [class*="clmn_4_block_paid_item_content-"]');
-        const content = contentEl ? (contentEl.textContent || '').trim() : '';
-
-        let eventType = null;
-        if (/wink/i.test(content)) {
-            eventType = 'wink';
-        } else if (/(?:liked|like)/i.test(content)) {
-            eventType = 'like';
+        // --- Name extraction: broad, multi-source ---
+        let rawName = '';
+        const nameSels = [
+            '[data-testid="notification-user-name"]',
+            '[data-testid*="notification"][data-testid*="name"]',
+            '[class*="notification_user_name-"]',
+            '[class*="notification_name-"]',
+            '[class*="clmn_4_block_paid_item_name-"]',
+            '[class*="paid_item_name-"]',
+            '[class*="item_name-"]'
+        ];
+        for (const sel of nameSels) {
+            const el = notifEl.querySelector(sel);
+            if (el && (el.textContent || '').trim()) {
+                rawName = (el.textContent || '').trim();
+                break;
+            }
         }
+        // Fallback: parse "Kateryna liked your profile" style copy
+        if (!rawName) {
+            const txt = (notifEl.textContent || '').trim();
+            const m = txt.match(/^([A-Z][A-Za-z0-9'\-]{1,24})\b/);
+            if (m) rawName = m[1];
+        }
+        // Blacklist UI verbs so "View" / "Liked" / "Please" are never treated as names.
+        const INVALID_NOTIF_NAME = /^(view|profile|like|liked|likes|wink|winked|winks|message|messages|write|please|hello|hi|hey|new|match|matches|online|offline|photo|photos|video|videos|date|dates|notification|notifications|attention|interested|interest|viewed|viewing|seen|read|replied|just|now|minute|minutes|hour|hours)$/i;
 
+        const cleaned = cleanNameString(rawName);
+        if (!cleaned || cleaned.length < 2 || INVALID_NOTIF_NAME.test(cleaned)) {
+            // No reliable human name — reject the card so we don't send "Hi View..."
+            return null;
+        }
+        const partnerName = cleaned;
+        // --- Content/event extraction ---
+        let content = '';
+        const contentSels = [
+            '[data-testid="notification-content"]',
+            '[data-testid*="notification"][data-testid*="content"]',
+            '[class*="notification_content-"]',
+            '[class*="clmn_4_block_paid_item_content-"]',
+            '[class*="paid_item_content-"]'
+        ];
+        for (const sel of contentSels) {
+            const el = notifEl.querySelector(sel);
+            if (el && (el.textContent || '').trim()) {
+                content = (el.textContent || '').trim();
+                break;
+            }
+        }
+        if (!content) content = (notifEl.textContent || '').trim();
+
+        // Broader event-type detection
+        const lc = content.toLowerCase();
+        let eventType = null;
+        if (/\bwink(?:ed|ing|s)?\b/.test(lc) || /😉/.test(content)) {
+            eventType = 'wink';
+        } else if (/\bliked\b|\blike(?:d|s)?\b|showed interest|is interested|interested in you/.test(lc)) {
+            eventType = 'like';
+        } else if (
+            /\bview(?:ed|ing|s)?\b/.test(lc) ||
+            /c4_item_text_viwed/i.test(content) ||           // the site's own "viewed" class
+            notifEl.querySelector('[class*="item_text_viwed"]')  // DOM-based fallback
+        ) {
+            eventType = 'view';
+        }
         if (!eventType) return null;
 
-        const timeEl = notifEl.querySelector('[data-testid="notification-date"], [class*="notification_date-"], [class*="clmn_4_block_paid_item_time-"]');
-        const timeStr = timeEl ? (timeEl.textContent || '').trim() : '';
+        // --- Time ---
+        let timeStr = '';
+        const timeSels = [
+            '[data-testid="notification-date"]',
+            '[class*="notification_date-"]',
+            '[class*="clmn_4_block_paid_item_time-"]',
+            '[class*="paid_item_time-"]'
+        ];
+        for (const sel of timeSels) {
+            const el = notifEl.querySelector(sel);
+            if (el && (el.textContent || '').trim()) {
+                timeStr = (el.textContent || '').trim();
+                break;
+            }
+        }
 
-        const womanImg = notifEl.querySelector('[data-testid="notification-woman-photo"] img, [class*="notification_woman_photo-"]');
+        // --- Photo (optional) ---
+        const womanImg = notifEl.querySelector('[data-testid="notification-woman-photo"] img, [class*="notification_woman_photo-"] img, img');
         const womanPhotoSrc = womanImg ? (womanImg.src || '') : '';
 
         return {
@@ -2857,6 +3058,89 @@ Strict Requirements:
             womanPhotoSrc
         };
     }
+
+    function enqueueNotification(notifEl) {
+        const details = extractNotificationDetails(notifEl);
+        if (!details) return;
+
+        const key = buildNotifKey(notifEl, details);
+        details.notifId = key;
+
+        // --- NEW: record view timestamps independently of auto-response ---
+        // This runs even if the responder is off or the partner is in cooldown,
+        // so the studio can still tell the AI "he viewed your profile recently".
+        if (details.eventType === 'view' && !isNotifResponded(key)) {
+            let shouldRecord = true;
+            if (details.timeStr) {
+                try {
+                    const info = isTimestampEligible(details.timeStr, new Date(), 1);
+                    // Skip clearly-old timestamps (dates from prior days)
+                    shouldRecord = info.reason !== 'past_date'
+                        && info.reason !== 'relative_days'
+                        && info.diffHours <= VIEWED_RECENTLY_HOURS;
+                } catch (e) {
+                    shouldRecord = true;
+                }
+            }
+            if (shouldRecord) {
+                recordPartnerViewResponded(details.partnerName);
+            }
+        }
+
+        if (!isAutoRespondLikesWinksEnabled()) return;
+        if (isNotifResponded(key)) return;
+        if (isPartnerInNotifCooldown(details.partnerName)) return;
+
+        if (details.eventType === 'view' && isPartnerInViewCooldown(details.partnerName)) {
+            logDebug('INFO', `[Instant Responder] Skipped repeat VIEW from ${details.partnerName} (within ${getViewCooldownHours()}h view cooldown).`);
+            return;
+        }
+
+        if (notifQueue.some((item) => item.notifId === key)) return;
+
+        logDebug('INFO', `[Instant Responder] ⚡ Intercepted ${details.eventType.toUpperCase()} from ${details.partnerName} (${details.timeStr || 'just now'})`);
+        notifQueue.push(details);
+        processNotifQueue();
+    }
+
+    // Much broader DOM sweep: any element in Column 4 that textually looks like
+    // a like/wink notification will be enqueued.
+    function scanColumn4Notifications() {
+        if (!isAutoRespondLikesWinksEnabled()) return;
+
+        // 1. Try well-known selectors first
+        const targeted = document.querySelectorAll(
+            '[class*="clmn_4_block_paid_item"], [data-testid^="notification-"], [class*="notification_item-"]'
+        );
+        targeted.forEach((item) => {
+            if (!item.dataset.tmEnqueued) {
+                enqueueNotification(item);
+                // Don't set tmEnqueued here — enqueueNotification dedupes via buildNotifKey
+            }
+        });
+
+        // 2. Broad text-based fallback within Column 4
+        const col4 = document.querySelector('[class*="clmn_4"]');
+        if (col4) {
+            const candidates = col4.querySelectorAll('div, li, article');
+            candidates.forEach((el) => {
+                // Skip if it's a huge container (contains too many children)
+                if (el.children.length > 8) return;
+                const t = (el.textContent || '').trim();
+                if (t.length < 10 || t.length > 200) return;
+                if (/\b(wink|liked|like|interested)\b/i.test(t)) {
+                    enqueueNotification(el);
+                }
+            });
+        }
+    }
+
+    // ============================================================
+    // state + reply generation + queue drain + send
+    // ============================================================
+
+    let isProcessingNotification = false;
+    const notifQueue = [];
 
     async function generateLikeWinkCompelReply(details, chatInfo) {
         const partnerName = details.partnerName || 'Honey';
@@ -2887,7 +3171,7 @@ PSYCHOLOGICAL HOOK - FORCING AN IMMEDIATE REPLY:
 Your reply must playfully tease and challenge him for making such a subtle move, piquing his curiosity and ego so strongly that it is practically IMPOSSIBLE for him not to reply!
 Key psychological angles to use (pick one or weave naturally):
 1. Playful Challenge / Tease: Tease him that a wink is a bit too subtle for a handsome man, and challenge him to show what else he has got.
-   (e.g., "A wink? Bold move... but tell me, is that your subtle way of saying I caught your eye, or do you always play it that mysteriously? 😉")
+   (e.g., "A wink? Bold move... but tell me, is that your subtle way of saying I caught your eye, or do you always play it so mysteriously? 😉")
 2. Curiosity & Ego: Ask what made him stop and wink, or tease him about whether he was too stunned by your photos to write actual words.
    (e.g., "Don't tell me a wink is all I get from a man like you. Were you testing the waters, or did my smile leave you a little speechless? 😏")
 3. Irresistible Flirtation: Make him feel noticed while challenging him to step up.
@@ -2902,6 +3186,37 @@ Strict Requirements:
 6. Output ONLY the reply text.`;
 
                     userPrompt = `${partnerName} just sent me a wink! Write a playful, captivating, and flirtatious message that calls out his wink with charm and forces him to reply to me. Keep reply SHORT, STRICTLY UNDER ${targetChars} characters (max ${maxWords} words), ending with an engaging question.`;
+
+                } else if (eventType === 'view') {
+                    systemPrompt = `You are ${profileName}, a witty, warm, captivating, and confident woman chatting with a gentleman named ${partnerName} on a dating site.
+IDENTITY INTEGRITY: You are ${profileName}. Never refer to yourself as anyone else or any operator name (e.g. Grace). Never say "I am [another name]".
+
+CRITICAL CONVERSATION STATUS:
+${partnerName} just VIEWED your profile but has not messaged you yet.
+A profile view is a quiet sign of interest — he was curious enough to look, but hasn't worked up the courage to say hello.
+Your goal is to reward his curiosity by reaching out first, making him feel flattered and noticed, and giving him an easy reason to reply.
+
+PSYCHOLOGICAL HOOK - FORCING AN IMMEDIATE REPLY:
+Your message must gently call out that you noticed he stopped by, and tease him (kindly) for looking without saying anything — this creates an "oh, she saw me!" moment he cannot help but respond to.
+Key psychological angles to use (pick one or weave naturally):
+1. Playful "I caught you" tease:
+   (e.g., "I saw you peeking at my profile... now you owe me a hello 😉 What caught your eye first?")
+2. Warm, flattered invitation:
+   (e.g., "Well hello there! I noticed you stopped by, and now I'm curious — what were you thinking when you looked at my photos? Tell me the truth!")
+3. Confident challenge:
+   (e.g., "You looked, but you didn't say hi... were you shy, or were you hoping I'd write first? Lucky for you, I did. 😏 What's your story?")
+
+Strict Requirements:
+1. STRICT HARD MAXIMUM: The response MUST NOT EXCEED ${targetChars} characters under any circumstances! Aim strictly between ${minChars} and ${targetChars} characters (at most ${maxWords} words).
+2. The first 30 characters must be captivating and hook attention immediately.
+3. DO NOT prefix with your name, sender tag, or role (do not write "${profileName}:" or "[${profileName} (You)]:").
+4. MUST reference that you noticed him viewing/stopping by your profile.
+5. MUST end with an irresistible, easy-to-answer open question that compels a reply.
+6. DO NOT wrap the output in quotation marks or apostrophes at start or end.
+7. Output ONLY the reply text.`;
+
+                    userPrompt = `${partnerName} just viewed my profile but hasn't messaged me. Write a warm, playful, and charming message that calls out his visit with a smile, teases him gently for looking without saying hi, and gives him a fun, easy question to reply to. Keep reply SHORT, STRICTLY UNDER ${targetChars} characters (max ${maxWords} words), ending with an engaging question.`;
+
                 } else {
                     systemPrompt = `You are ${profileName}, a witty, playfully provocative, captivating, and confident woman chatting with a gentleman named ${partnerName} on a dating site.
 IDENTITY INTEGRITY: You are ${profileName}. Never refer to yourself as anyone else or any operator name (e.g. Grace). Never say "I am [another name]".
@@ -2974,7 +3289,6 @@ Strict Requirements:
             logDebug('WARN', `[Instant Responder] OpenRouter key missing for ${eventType} responder.`);
         }
 
-        // STRICT ZERO-DEFAULT POLICY: If AI generation fails, NEVER send canned fallback templates!
         const failReason = hasKey ? 'OpenRouter API failed or returned empty' : 'OpenRouter API key missing in settings';
         logDebug('ERROR', `[Instant Responder] ❌ Reply aborted for ${partnerName}'s ${eventType}: ${failReason}. No default message sent.`);
         showAiInactiveAlert(
@@ -2983,24 +3297,6 @@ Strict Requirements:
             false
         );
         return null;
-    }
-
-    let isProcessingNotification = false;
-    const notifQueue = [];
-
-    function enqueueNotification(notifEl) {
-        if (!isAutoRespondLikesWinksEnabled()) return;
-        const details = extractNotificationDetails(notifEl);
-        if (!details) return;
-
-        if (isNotifResponded(details.notifId)) return;
-        if (isPartnerInNotifCooldown(details.partnerName)) return;
-        if (notifQueue.some(item => item.notifId === details.notifId)) return;
-
-        logDebug('INFO', `[Instant Responder] ⚡ Intercepted incoming ${details.eventType.toUpperCase()} from ${details.partnerName} (${details.timeStr})!`);
-        notifQueue.push(details);
-
-        processNotifQueue();
     }
 
     async function processNotifQueue() {
@@ -3040,6 +3336,9 @@ Strict Requirements:
 
         markNotifResponded(details.notifId);
         recordPartnerNotifResponded(partnerName);
+        if (eventType === 'view') {
+            recordPartnerViewResponded(partnerName);
+        }
 
         logDebug('STEP', `⚡ [Instant Responder] Opening chat for ${partnerName} (${eventType})...`);
         updateStatus(`⚡ [Instant] Responding to ${partnerName}'s ${eventType}...`);
@@ -3112,54 +3411,42 @@ Strict Requirements:
     }
 
     function initColumn4NotificationWatcher() {
-        logDebug('INFO', '[Instant Responder] Initializing Column 4 notification watcher...');
+        logDebug('INFO', '[Instant Responder] Initializing hardened Column 4 watcher...');
 
-        function scanColumn4Notifications() {
+        // --- MutationObserver: fires the instant a new node is added ---
+        let debounceTimer = null;
+        const observer = new MutationObserver(() => {
             if (!isAutoRespondLikesWinksEnabled()) return;
-            const items = document.querySelectorAll(
-                '[class*="clmn_4_block_list"] [class*="clmn_4_block_paid_item"], [class*="clmn_4"] [data-testid^="notification-"], [data-testid^="notification-"]'
-            );
-            items.forEach((item) => {
-                const notifId = item.getAttribute('data-testid') || item.id || '';
-                if (notifId && !isNotifResponded(notifId)) {
-                    enqueueNotification(item);
-                }
-            });
-        }
-
-        let debounceNotifTimer = null;
-        const observer = new MutationObserver((mutations) => {
-            if (!isAutoRespondLikesWinksEnabled()) return;
-
-            let hasNew = false;
-            for (const m of mutations) {
-                if (m.addedNodes && m.addedNodes.length > 0) {
-                    for (const node of m.addedNodes) {
-                        if (node.nodeType === 1) {
-                            if (
-                                (typeof node.matches === 'function' && node.matches('[data-testid^="notification-"], [class*="clmn_4_block_paid_item"]')) ||
-                                (typeof node.querySelector === 'function' && node.querySelector('[data-testid^="notification-"], [class*="clmn_4_block_paid_item"]'))
-                            ) {
-                                hasNew = true;
-                                break;
-                            }
-                        }
-                    }
-                }
-                if (hasNew) break;
-            }
-
-            if (hasNew) {
-                clearTimeout(debounceNotifTimer);
-                debounceNotifTimer = setTimeout(scanColumn4Notifications, 250);
-            }
+            clearTimeout(debounceTimer);
+            // 50 ms debounce lets React finish painting the notification
+            debounceTimer = setTimeout(scanColumn4Notifications, 50);
         });
 
-        const target = document.querySelector('[class*="clmn_4_block_list"], [class*="clmn_4"]') || document.body;
-        observer.observe(target, { childList: true, subtree: true });
+        function attachObserver() {
+            const target = document.querySelector('[class*="clmn_4"]') || document.body;
+            // Disconnect any previous observation before re-attaching
+            observer.disconnect();
+            observer.observe(target, { childList: true, subtree: true });
+        }
+        attachObserver();
 
-        // Backup polling every 3 seconds
-        setInterval(scanColumn4Notifications, 3000);
+        // Re-attach whenever the URL / route changes (SPA)
+        let lastHref = location.href;
+        setInterval(() => {
+            if (location.href !== lastHref) {
+                lastHref = location.href;
+                attachObserver();
+                scanColumn4Notifications();
+            }
+        }, 800);
+
+        // --- Fast polling fallback (600 ms) ---
+        setInterval(scanColumn4Notifications, 600);
+
+        // --- One immediate sweep on boot ---
+        setTimeout(scanColumn4Notifications, 800);
+
+        logDebug('SUCCESS', '[Instant Responder] Watcher live (600 ms poll + MutationObserver).');
     }
 
     function parseChatHistory(cardEl = null) {
@@ -3282,30 +3569,48 @@ Strict Requirements:
         const customPromptSection = customInstructionClean ? `\n\nCRITICAL USER CUSTOM INSTRUCTION:\nThe user has provided a custom instruction for this message:\n"${customInstructionClean}"\nYour generated suggestions MUST specifically follow and incorporate this instruction! Ensure the message weaves this in naturally while maintaining the charming, engaging persona.` : '';
 
         if (chatData.isEmptyChat) {
+            const hasCustom = !!customInstructionClean;
+            const viewedRecently = hasPartnerViewedRecently(chatData.partnerName);
+
             let toneInstruction = '';
             if (tone === 'flirty') {
-                toneInstruction = 'Tone: Playfully seductive, teasing him for checking out your photos/profile, confident and flirty.';
+                toneInstruction = 'Tone: Playfully seductive, confident and flirty.';
             } else if (tone === 'question') {
-                toneInstruction = 'Tone: Curious and intriguing, asking what made him view your profile or what caught his eye.';
+                toneInstruction = 'Tone: Curious, warm, and intriguing — ask an engaging question that invites him to open up.';
             } else if (tone === 'reengage') {
-                toneInstruction = 'Tone: Teasing him playfully for viewing your profile without saying hello first.';
+                toneInstruction = 'Tone: Playfully teasing him to spark his curiosity and get him talking.';
             } else {
                 toneInstruction = 'Tone: Charming, warm, captivating, and flirtatious.';
             }
 
+            // Situation line — tells the AI what we actually know about this man.
+            const situationLine = viewedRecently
+                ? `SITUATION: ${chatData.partnerName} RECENTLY VIEWED your profile but has NOT sent a message yet. He was curious enough to look but hasn't said hello — a quiet sign of interest.`
+                : `SITUATION: This is a brand-new empty chat with ${chatData.partnerName}. No messages have been exchanged yet on either side.`;
+
+            // When a custom instruction is present, IT is the theme. Do NOT force
+            // any particular opening angle — the user knows what they want.
+            const themeRule = hasCustom
+                ? `2. CUSTOM INSTRUCTION IS THE THEME (HIGHEST PRIORITY): The user's custom instruction (shown above) defines the ENTIRE message. Follow it precisely and literally. Every suggestion MUST be built around that theme.`
+                : viewedRecently
+                    ? `2. OPENING ANGLE: He recently VIEWED your profile. Reference this naturally and playfully — acknowledge that you noticed him stop by, tease him gently for looking without saying hi, or ask what caught his eye. Tone should feel warm and confident, never creepy or accusatory. Do NOT invent other facts about him.`
+                    : `2. OPENING ANGLE: This is a brand-new empty chat with no prior messages. Open warmly and confidently — you may gently acknowledge that you're making the first move, but keep it natural and do not invent details you don't actually have.`;
+
             systemPrompt = `You are ${chatData.profileName || getDynamicProfileName()}, an attractive, charming woman on a dating site.
 IDENTITY INTEGRITY: You are ${chatData.profileName || getDynamicProfileName()}. Never refer to yourself as anyone else or any operator name (e.g. Grace). Never say "I am [another name]".
-A man named ${chatData.partnerName} has just viewed your profile (or this is a new empty chat where you are making the first move).
-Your goal is to send him an irresistible first message / conversation starter that makes him reply immediately.
+
+${situationLine}
 ${chatData.partnerDetails ? `Context about him: ${chatData.partnerDetails}` : ''}
 ${chatData.profileBio ? `Profile details: ${chatData.profileBio}` : ''}
+
+Your goal is to send him a captivating first message that makes him want to reply immediately.
 ${customPromptSection}
 
 ${toneInstruction}
 
 STRICT LENGTH & FORMATION RULES:
 1. TARGET LENGTH: Each message MUST be CLOSE TO ${targetChars} characters long (aim strictly for ${minRange} to ${maxRange} characters). Do not write excessively beyond or below ${targetChars} characters.
-2. PROFILE VIEW CONTEXT: The message MUST relate to him viewing/visiting your profile, checking out your photos, or you noticing him and deciding to say hello first.
+${themeRule}
 3. CAPTIVATING HOOK: The first 30 characters MUST be captivating, spicy, or intriguing to grab his attention immediately in notification previews.
 4. END WITH A QUESTION: Every message MUST end with a fun, simple, easy-to-answer question that compels him to respond right away.
 5. NO QUOTES: Do NOT wrap replies in quotation marks or apostrophes. Never start or end with " or '.
@@ -3318,9 +3623,14 @@ Example:
 2. Second icebreaker message close to ${targetChars} characters ending with a question?
 3. Third icebreaker message close to ${targetChars} characters ending with a question?`;
 
-            userPrompt = customInstructionClean
-                ? `Write 3 irresistible first-contact messages to ${chatData.partnerName} following this custom instruction: "${customInstructionClean}". Target: close to ${targetChars} characters each (${minRange}-${maxRange} chars). End each with a simple question. No quotes.`
-                : `The chat is empty - ${chatData.partnerName} visited my profile! Generate 3 irresistible first-contact icebreakers related to his profile view. Target: close to ${targetChars} characters each (${minRange}-${maxRange} chars). End each with a simple question. No quotes.`;
+            userPrompt = hasCustom
+                ? `Write 3 irresistible first-contact messages to ${chatData.partnerName}.
+MANDATORY THEME (from the user): "${customInstructionClean}"
+Every single message MUST be built around this theme.
+Target: close to ${targetChars} characters each (${minRange}-${maxRange} chars). End each with a simple question. No quotes.`
+                : viewedRecently
+                    ? `Write 3 irresistible icebreakers for ${chatData.partnerName}, who recently VIEWED my profile but hasn't messaged me. Playfully acknowledge his visit and invite him to say hi. Target: close to ${targetChars} characters each (${minRange}-${maxRange} chars). End each with a simple question. No quotes.`
+                    : `Write 3 irresistible first-contact icebreakers for an empty chat with ${chatData.partnerName}. Target: close to ${targetChars} characters each (${minRange}-${maxRange} chars). End each with a simple question. No quotes.`;
         } else {
             const recentMessages = chatData.messages.slice(-8);
             const lastMsg = chatData.lastMsg;
@@ -3620,6 +3930,37 @@ Example:
                 <span style="font-size:12px; color:#a78bfa; font-weight:bold;">${detectActiveProfileName() || currentSelectedProfile || 'Auto-detecting...'}</span>
             </div>
 
+            <!-- CUSTOM INSTRUCTION & PRESETS SETTING (v6.0) -->
+            <hr style="border:0; border-top:1px solid #374151; margin:14px 0;">
+            <h4 style="margin:0 0 8px 0; font-size:13px; color:#e5e7eb; display:flex; justify-content:space-between; align-items:center;">
+                <span>✍️ Campaign Custom Instruction & Presets</span>
+                <span style="font-size:10px; color:#a78bfa; font-weight:normal; background:#312e81; padding:1px 6px; border-radius:4px;">v6.0</span>
+            </h4>
+
+            <label style="display:flex; align-items:center; gap:8px; font-size:12px; color:#c4b5fd; margin-bottom:8px; cursor:pointer;">
+                <input id="tm-camp-custom-enabled" type="checkbox" ${isCampaignCustomEnabled() ? 'checked' : ''}>
+                <span><b>Apply Custom Instruction to Auto-Campaigns</b> (All Chats & Chance)</span>
+            </label>
+
+            <div style="display:flex; gap:6px; margin-bottom:6px; align-items:center;">
+                <label style="font-size:11px; color:#9ca3af; white-space:nowrap;">Load Preset:</label>
+                <select id="tm-settings-preset-select" style="flex:1; padding:5px 8px; background:#111827; border:1px solid #374151; color:#fff; border-radius:5px; font-size:11px;">
+                    <option value="">-- Choose a Preset to Load --</option>
+                </select>
+                <button type="button" id="tm-settings-edit-preset" title="Edit the selected preset" style="padding:5px 8px; background:#4338ca; color:#fff; border:none; border-radius:5px; font-size:11px; font-weight:bold; cursor:pointer;">✎ Edit</button>
+                <button type="button" id="tm-settings-delete-preset" title="Delete the selected preset" style="padding:5px 8px; background:#7f1d1d; color:#fff; border:none; border-radius:5px; font-size:11px; font-weight:bold; cursor:pointer;">🗑️</button>
+            </div>
+
+            <textarea id="tm-camp-custom-text" placeholder="e.g. 'Invite him out for coffee', 'Ask what his weekend plans are', 'Tease him playfully'..." 
+                style="width:100%; height:48px; box-sizing:border-box; padding:6px 8px; background:#111827; border:1px solid #374151; color:#fff; border-radius:6px; font-size:11.5px; resize:none; margin-bottom:6px; line-height:1.3;">${getCampaignCustomInstruction()}</textarea>
+
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                <button type="button" id="tm-settings-save-new-preset" style="padding:4px 10px; background:#4338ca; color:#fff; border:none; border-radius:5px; font-size:10.5px; font-weight:bold; cursor:pointer;">
+                    💾 Save Box as New Preset
+                </button>
+                <span style="font-size:10px; color:#94a3b8;">Presets sync across Studio & Settings</span>
+            </div>
+
             <!-- HOURLY MESSAGE LIMIT SETTING (v5.1) -->
             <label style="font-size:11px; color:#9ca3af; display:block; margin-bottom:4px;">Hourly Message Limit (Max sends per 60m):</label>
             <div style="display:flex; gap:6px; margin-bottom:6px; align-items:center;">
@@ -3653,6 +3994,11 @@ Example:
                     <input id="tm-camp-notif-cooldown" type="number" min="5" max="720" value="${getNotifCooldownMins()}" style="width:55px; padding:2px 5px; background:#1e293b; border:1px solid #475569; border-radius:4px; color:#fff; font-size:11px;">
                     <span>mins</span>
                 </div>
+                <div style="display:flex; align-items:center; gap:8px; margin-left:24px; margin-top:4px; font-size:11px; color:#94a3b8;">
+                    <span>Ignore repeat PROFILE VIEWS from same user for:</span>
+                    <input id="tm-camp-view-cooldown" type="number" min="0" max="720" step="1" value="${getViewCooldownHours()}" style="width:55px; padding:2px 5px; background:#1e293b; border:1px solid #475569; border-radius:4px; color:#fff; font-size:11px;">
+                    <span>hours <span style="color:#64748b;">(0 = reply to every view)</span></span>
+                </div>
                 <hr style="border:0; border-top:1px solid #374151; margin:8px 0;">
                 <label style="display:flex; align-items:center; gap:8px; font-size:12px; color:#c4b5fd; cursor:pointer;">
                     <input id="tm-camp-semi-manual" type="checkbox" ${isSemiManualModeEnabled() ? 'checked' : ''}>
@@ -3680,6 +4026,108 @@ Example:
         document.getElementById('tm-limit-30').onclick = () => { hourlyLimitInput.value = 30; };
         document.getElementById('tm-limit-50').onclick = () => { hourlyLimitInput.value = 50; };
         document.getElementById('tm-limit-0').onclick = () => { hourlyLimitInput.value = 0; };
+        // Populate Preset Dropdown in Settings (v6.0)
+        const presetSelect = document.getElementById('tm-settings-preset-select');
+        const campCustomTextarea = document.getElementById('tm-camp-custom-text');
+        const campCustomCheck = document.getElementById('tm-camp-custom-enabled');
+
+        function populateSettingsPresetDropdown() {
+            if (!presetSelect) return;
+            const previousValue = presetSelect.value;
+            const currentPresets = getAllCustomPresets();
+            presetSelect.innerHTML = '<option value="">-- Choose a Preset to Load --</option>';
+            currentPresets.forEach((p) => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.textContent = `${p.label} - "${p.text.slice(0, 35)}..."`;
+                presetSelect.appendChild(opt);
+            });
+            // Preserve selection if it still exists
+            if (previousValue && Array.from(presetSelect.options).some(o => o.value === previousValue)) {
+                presetSelect.value = previousValue;
+            }
+        }
+        populateSettingsPresetDropdown();
+        // Expose for cross-UI sync (Studio edits → Settings dropdown refresh)
+        window.__alphaPopulateSettingsPresetDropdown = populateSettingsPresetDropdown;
+
+        presetSelect.onchange = () => {
+            const selectedId = presetSelect.value;
+            if (!selectedId) return;
+            const allP = getAllCustomPresets();
+            const found = allP.find(p => p.id === selectedId);
+            if (found && campCustomTextarea) {
+                campCustomTextarea.value = found.text;
+            }
+        };
+
+        document.getElementById('tm-settings-edit-preset').onclick = () => {
+            const selectedId = presetSelect.value;
+            if (!selectedId) {
+                alert('Pick a preset from the dropdown first.');
+                return;
+            }
+            const found = getAllCustomPresets().find(p => p.id === selectedId);
+            if (!found) return;
+
+            const newLabel = prompt('Edit preset name:', found.label);
+            if (newLabel === null) return;   // user cancelled
+
+            const newText = prompt('Edit preset instruction:', found.text);
+            if (newText === null) return;
+
+            if (!newText.trim()) {
+                alert('Instruction text cannot be empty.');
+                return;
+            }
+
+            const updated = editCustomPreset(selectedId, newLabel, newText);
+            if (updated) {
+                refreshAllPresetUIs();
+                presetSelect.value = updated.id;
+                if (campCustomTextarea) campCustomTextarea.value = updated.text;
+                updateStatus(`✎ Updated preset "${updated.label}".`);
+            }
+        };
+
+        document.getElementById('tm-settings-delete-preset').onclick = () => {
+            const selectedId = presetSelect.value;
+            if (!selectedId) {
+                alert('Pick a preset from the dropdown first.');
+                return;
+            }
+            const found = getAllCustomPresets().find(p => p.id === selectedId);
+            if (!found) return;
+
+            if (found.builtIn) {
+                alert('Built-in presets cannot be deleted.');
+                return;
+            }
+            if (!confirm(`Delete preset "${found.label}"?`)) return;
+
+            deleteCustomPreset(selectedId);
+            refreshAllPresetUIs();
+            presetSelect.value = '';
+            updateStatus(`🗑️ Deleted preset "${found.label}".`);
+        };
+
+        document.getElementById('tm-settings-save-new-preset').onclick = () => {
+            const textToSave = campCustomTextarea ? campCustomTextarea.value.trim() : '';
+            if (!textToSave) {
+                alert('Please type an instruction in the box before saving as a preset.');
+                return;
+            }
+            const defaultName = '⭐ ' + textToSave.split(/\s+/).slice(0, 3).join(' ');
+            const label = prompt('Enter a short label/name for this preset:', defaultName);
+            if (label === null) return; // User cancelled
+            const created = addCustomPreset(label, textToSave);
+            if (created) {
+                refreshAllPresetUIs();
+                presetSelect.value = created.id;
+                updateStatus(`✅ Saved preset "${created.label}"!`);
+            }
+        };
+
         const allChatsCheck = document.getElementById('tm-camp-all-chats-sched');
         const chanceCheck = document.getElementById('tm-camp-chance-sched');
 
@@ -3797,6 +4245,8 @@ Example:
 
             const hourlyVal = parseInt(hourlyLimitInput.value, 10);
             setHourlyMessageLimit(isNaN(hourlyVal) ? 30 : hourlyVal);
+            setCampaignCustomInstruction(campCustomTextarea ? campCustomTextarea.value : '');
+            setCampaignCustomEnabled(campCustomCheck ? campCustomCheck.checked : false);
 
 
 
@@ -3808,6 +4258,11 @@ Example:
             if (notifCooldownInput) {
                 const cVal = parseInt(notifCooldownInput.value, 10);
                 if (!isNaN(cVal) && cVal >= 1) setNotifCooldownMins(cVal);
+            }
+            const viewCooldownInput = document.getElementById('tm-camp-view-cooldown');
+            if (viewCooldownInput) {
+                const vVal = parseFloat(viewCooldownInput.value);
+                if (!isNaN(vVal) && vVal >= 0) setViewCooldownHours(vVal);
             }
             const semiManualCheck = document.getElementById('tm-camp-semi-manual');
             if (semiManualCheck) setSemiManualModeEnabled(semiManualCheck.checked);
@@ -3829,6 +4284,131 @@ Example:
     const WRITEUP_POS_KEY = 'alpha_writeup_pos_v48';
     const WRITEUP_COLLAPSED_KEY = 'alpha_writeup_collapsed_v48';
     const WRITEUP_PROMPT_KEY = 'alpha_writeup_custom_prompt_v48';
+    const CUSTOM_PRESETS_STORAGE_KEY = 'alpha_custom_presets_v60';
+    const CAMP_CUSTOM_KEY = 'alpha_camp_custom_instruction_v60';
+    const CAMP_CUSTOM_ENABLED_KEY = 'alpha_camp_custom_enabled_v60';
+
+    const BUILTIN_PRESETS = [
+        { id: 'preset_coffee', label: '☕ Coffee', text: 'Invite him out for coffee or a drink in a playful, charming way', builtIn: true },
+        { id: 'preset_photos', label: '🐕 Photos', text: 'Playfully tease and compliment him about his photos', builtIn: true },
+        { id: 'preset_weekend', label: '✈️ Weekend', text: 'Ask what his weekend plans are or if he loves traveling', builtIn: true },
+        { id: 'preset_flirty', label: '😉 Flirty', text: 'Tease him playfully and ask a flirty question', builtIn: true },
+        { id: 'preset_deeptalk', label: '❓ Deep Talk', text: 'Ask an intriguing question to spark a fun, meaningful conversation', builtIn: true }
+    ];
+
+    function getAllCustomPresets() {
+        try {
+            const raw = localStorage.getItem(CUSTOM_PRESETS_STORAGE_KEY);
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed) && parsed.length > 0) {
+                    return parsed;
+                }
+            }
+        } catch (e) { }
+        return BUILTIN_PRESETS;
+    }
+
+    function saveAllCustomPresets(list) {
+        try {
+            localStorage.setItem(CUSTOM_PRESETS_STORAGE_KEY, JSON.stringify(list));
+        } catch (e) { }
+    }
+
+    function addCustomPreset(label, text) {
+        if (!text || !text.trim()) return null;
+        const cleanText = text.trim();
+        let cleanLabel = (label || '').trim();
+        if (!cleanLabel) {
+            const words = cleanText.split(/\s+/).slice(0, 3).join(' ');
+            cleanLabel = '✨ ' + (words.length > 14 ? words.slice(0, 14) + '...' : words);
+        }
+        const currentList = getAllCustomPresets();
+        const newPreset = {
+            id: 'preset_' + Date.now(),
+            label: cleanLabel,
+            text: cleanText,
+            builtIn: false,
+            timestamp: Date.now()
+        };
+        currentList.push(newPreset);
+        saveAllCustomPresets(currentList);
+        return newPreset;
+    }
+
+    function deleteCustomPreset(presetId) {
+        const currentList = getAllCustomPresets();
+        const updated = currentList.filter(p => p.id !== presetId);
+        saveAllCustomPresets(updated);
+        return updated;
+    }
+
+    function editCustomPreset(presetId, newLabel, newText) {
+        const list = getAllCustomPresets();
+        const idx = list.findIndex(p => p.id === presetId);
+        if (idx === -1) return null;
+
+        const trimmedLabel = (newLabel || '').trim();
+        const trimmedText = (newText || '').trim();
+
+        // Refuse to save an empty instruction
+        if (!trimmedText) return null;
+
+        list[idx] = {
+            ...list[idx],
+            label: trimmedLabel || list[idx].label,
+            text: trimmedText,
+            editedAt: Date.now()
+        };
+        saveAllCustomPresets(list);
+        return list[idx];
+    }
+
+    // Re-renders both Studio chips and the Settings dropdown.
+    // Safe to call even when one (or both) of the UIs isn't mounted yet.
+    function refreshAllPresetUIs() {
+        // 1. Studio chips
+        const chipsEl = document.getElementById('alpha-wg-chips-row');
+        if (chipsEl && typeof window.__alphaRenderPresetChips === 'function') {
+            try {
+                window.__alphaRenderPresetChips(chipsEl, writeupCustomInput);
+            } catch (e) { }
+        }
+
+        // 2. Settings dropdown (only exists while the Settings modal is open)
+        if (typeof window.__alphaPopulateSettingsPresetDropdown === 'function') {
+            try { window.__alphaPopulateSettingsPresetDropdown(); } catch (e) { }
+        }
+
+        // 3. Sync the Settings dropdown's selected option back to the current textarea value
+        const presetSelect = document.getElementById('tm-settings-preset-select');
+        const campCustomTextarea = document.getElementById('tm-camp-custom-text');
+        if (presetSelect && campCustomTextarea) {
+            const currentText = campCustomTextarea.value.trim();
+            if (!currentText) {
+                presetSelect.value = '';
+            } else {
+                const match = getAllCustomPresets().find(p => p.text.trim() === currentText);
+                presetSelect.value = match ? match.id : '';
+            }
+        }
+    }
+
+    function getCampaignCustomInstruction() {
+        return localStorage.getItem(CAMP_CUSTOM_KEY) || '';
+    }
+
+    function setCampaignCustomInstruction(val) {
+        localStorage.setItem(CAMP_CUSTOM_KEY, (val || '').trim());
+    }
+
+    function isCampaignCustomEnabled() {
+        return localStorage.getItem(CAMP_CUSTOM_ENABLED_KEY) === 'true';
+    }
+
+    function setCampaignCustomEnabled(val) {
+        localStorage.setItem(CAMP_CUSTOM_ENABLED_KEY, val ? 'true' : 'false');
+    }
 
     let writeupPanel = null;
     let writeupHeader = null;
@@ -3903,6 +4483,10 @@ Example:
                 localStorage.removeItem(WRITEUP_PROMPT_KEY);
                 currentCustomInstruction = '';
                 updateStatus('Cleared custom writeup instruction.');
+                const chipsEl = document.getElementById('alpha-wg-chips-row');
+                if (chipsEl) renderPresetChips(chipsEl, writeupCustomInput);
+                const saveRowEl = document.getElementById('alpha-wg-save-preset-row');
+                if (saveRowEl) saveRowEl.style.display = 'none';
             }
         };
 
@@ -4016,14 +4600,106 @@ Example:
         contextRow.appendChild(writeupPartnerEl);
         contextRow.appendChild(selectorsWrap);
 
-        // 2. Custom Instruction Section
+        // 2. Custom Instruction Section & Preset Save Bar (v6.0)
         const instructionHdr = document.createElement('div');
         Object.assign(instructionHdr.style, {
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
             fontSize: '9.5px', fontWeight: '700', textTransform: 'uppercase',
             letterSpacing: '0.5px', color: '#94a3b8', marginTop: '1px'
         });
-        instructionHdr.innerHTML = `<span>✍️ Custom Instruction (Optional)</span><span style="color:#64748b; font-weight:normal;">Ctrl+Enter</span>`;
+
+        const hdrTitle = document.createElement('span');
+        hdrTitle.textContent = '✍️ Custom Instruction';
+
+        const hdrActions = document.createElement('div');
+        Object.assign(hdrActions.style, { display: 'flex', alignItems: 'center', gap: '6px' });
+
+        const savePresetTriggerBtn = document.createElement('button');
+        savePresetTriggerBtn.id = 'alpha-wg-save-preset-btn';
+        savePresetTriggerBtn.type = 'button';
+        savePresetTriggerBtn.innerHTML = '💾 + Save Preset';
+        savePresetTriggerBtn.title = 'Save this custom instruction as a reusable preset chip';
+        Object.assign(savePresetTriggerBtn.style, {
+            background: 'linear-gradient(135deg, #4338ca, #6366f1)',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '4px',
+            padding: '2px 7px',
+            fontSize: '9px',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+            transition: 'opacity 0.15s'
+        });
+
+        const ctrlEnterHint = document.createElement('span');
+        ctrlEnterHint.textContent = 'Ctrl+Enter';
+        ctrlEnterHint.style.cssText = 'color:#64748b; font-weight:normal; text-transform:none;';
+
+        hdrActions.appendChild(savePresetTriggerBtn);
+        hdrActions.appendChild(ctrlEnterHint);
+        instructionHdr.appendChild(hdrTitle);
+        instructionHdr.appendChild(hdrActions);
+
+        // Inline Save Preset Row (Smooth toggleable bar)
+        const savePresetRow = document.createElement('div');
+        savePresetRow.id = 'alpha-wg-save-preset-row';
+        savePresetRow.style.cssText = `
+            display: none;
+            background: #111827;
+            border: 1px solid #6366f1;
+            border-radius: 6px;
+            padding: 4px 6px;
+            margin: 2px 0 3px 0;
+            gap: 5px;
+            align-items: center;
+            box-sizing: border-box;
+        `;
+
+        const presetNameInput = document.createElement('input');
+        presetNameInput.type = 'text';
+        presetNameInput.id = 'alpha-wg-preset-name-input';
+        presetNameInput.placeholder = "Preset Name (e.g. 🏋️ Gym, 🍕 Food)...";
+        presetNameInput.style.cssText = `
+            flex: 1;
+            background: #1e293b;
+            border: 1px solid #475569;
+            color: #fff;
+            border-radius: 4px;
+            padding: 3px 6px;
+            font-size: 10px;
+            outline: none;
+        `;
+
+        const confirmSaveBtn = document.createElement('button');
+        confirmSaveBtn.type = 'button';
+        confirmSaveBtn.textContent = 'Save';
+        confirmSaveBtn.style.cssText = `
+            background: #059669;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            padding: 3px 8px;
+            font-size: 10px;
+            font-weight: bold;
+            cursor: pointer;
+        `;
+
+        const cancelSaveBtn = document.createElement('button');
+        cancelSaveBtn.type = 'button';
+        cancelSaveBtn.textContent = '✕';
+        cancelSaveBtn.style.cssText = `
+            background: #334155;
+            color: #94a3b8;
+            border: none;
+            border-radius: 4px;
+            padding: 3px 6px;
+            font-size: 10px;
+            cursor: pointer;
+        `;
+
+        savePresetRow.appendChild(presetNameInput);
+        savePresetRow.appendChild(confirmSaveBtn);
+        savePresetRow.appendChild(cancelSaveBtn);
 
         writeupCustomInput = document.createElement('textarea');
         writeupCustomInput.id = 'alpha-wg-custom-input';
@@ -4041,9 +4717,235 @@ Example:
             currentCustomInstruction = savedPrompt;
         }
 
+        // 3. Quick Preset Chips Container
+        const chipsRow = document.createElement('div');
+        chipsRow.id = 'alpha-wg-chips-row';
+        Object.assign(chipsRow.style, { display: 'flex', gap: '4px', flexWrap: 'wrap' });
+
+        function renderPresetChips(container, inputEl) {
+            if (!container) return;
+            container.innerHTML = '';
+            const presets = getAllCustomPresets();
+
+            presets.forEach((p) => {
+                const chip = document.createElement('div');
+                chip.setAttribute('data-preset-id', p.id);
+                const isCustom = !p.builtIn;
+
+                chip.style.cssText = `
+                    display: inline-flex;
+                    align-items: center;
+                    background: ${isCustom ? 'rgba(79, 70, 229, 0.25)' : '#1e293b'};
+                    border: 1px solid ${isCustom ? '#6366f1' : '#334155'};
+                    color: ${isCustom ? '#c7d2fe' : '#94a3b8'};
+                    border-radius: 12px;
+                    padding: 2px 7px;
+                    font-size: 9.5px;
+                    cursor: pointer;
+                    transition: all 0.15s ease;
+                    user-select: none;
+                    gap: 3px;
+                `;
+
+                const labelSpan = document.createElement('span');
+                labelSpan.textContent = p.label;
+                labelSpan.title = `Fill instruction: "${p.text}"`;
+                chip.appendChild(labelSpan);
+
+                chip.onclick = () => {
+                    inputEl.value = p.text;
+                    currentCustomInstruction = p.text;
+                    localStorage.setItem(WRITEUP_PROMPT_KEY, p.text);
+                    inputEl.focus();
+                    updateStatus(`Loaded preset: "${p.label}"`);
+                    updatePresetActiveStyles(container, p.id);
+                };
+
+                // Add edit + delete buttons for user-created presets
+                if (isCustom) {
+                    // --- Edit button (✎) ---
+                    const editBtn = document.createElement('span');
+                    editBtn.innerHTML = '✎';
+                    editBtn.title = 'Edit this preset';
+                    editBtn.style.cssText = `
+        font-size: 11px;
+        font-weight: bold;
+        color: #94a3b8;
+        cursor: pointer;
+        padding: 0 2px;
+        line-height: 1;
+        display: inline-block;
+    `;
+                    editBtn.onmouseenter = (e) => { e.stopPropagation(); editBtn.style.color = '#a5b4fc'; };
+                    editBtn.onmouseleave = (e) => { e.stopPropagation(); editBtn.style.color = '#94a3b8'; };
+                    editBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        const newLabel = prompt('Edit preset name:', p.label);
+                        if (newLabel === null) return;
+                        const newText = prompt('Edit preset instruction:', p.text);
+                        if (newText === null) return;
+                        if (!newText.trim()) {
+                            alert('Instruction text cannot be empty.');
+                            return;
+                        }
+                        const updated = editCustomPreset(p.id, newLabel, newText);
+                        if (updated) {
+                            refreshAllPresetUIs();
+                            updateStatus(`✎ Updated preset "${updated.label}".`);
+                        }
+                    };
+                    chip.appendChild(editBtn);
+
+                    // --- Delete button (×) ---
+                    const delBtn = document.createElement('span');
+                    delBtn.innerHTML = '&times;';
+                    delBtn.title = 'Delete this saved preset';
+                    delBtn.style.cssText = `
+        font-size: 12px;
+        font-weight: bold;
+        color: #94a3b8;
+        cursor: pointer;
+        padding: 0 1px;
+        line-height: 1;
+        margin-left: 1px;
+        display: inline-block;
+    `;
+                    delBtn.onmouseenter = (e) => { e.stopPropagation(); delBtn.style.color = '#ef4444'; };
+                    delBtn.onmouseleave = (e) => { e.stopPropagation(); delBtn.style.color = '#94a3b8'; };
+                    delBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        if (confirm(`Delete preset "${p.label}"?`)) {
+                            deleteCustomPreset(p.id);
+                            refreshAllPresetUIs();
+                            updateStatus(`🗑️ Deleted preset "${p.label}".`);
+                        }
+                    };
+                    chip.appendChild(delBtn);
+                }
+
+                chip.onmouseenter = () => {
+                    chip.style.borderColor = '#818cf8';
+                    chip.style.color = '#fff';
+                    chip.style.background = isCustom ? '#4338ca' : '#312e81';
+                };
+                chip.onmouseleave = () => {
+                    if (chip.getAttribute('data-active') !== 'true') {
+                        chip.style.borderColor = isCustom ? '#6366f1' : '#334155';
+                        chip.style.color = isCustom ? '#c7d2fe' : '#94a3b8';
+                        chip.style.background = isCustom ? 'rgba(79, 70, 229, 0.25)' : '#1e293b';
+                    }
+                };
+
+                // Highlight active preset if matches current textarea content
+                if (inputEl && inputEl.value.trim() === p.text.trim()) {
+                    chip.setAttribute('data-active', 'true');
+                    chip.style.borderColor = '#818cf8';
+                    chip.style.color = '#fff';
+                    chip.style.background = '#4338ca';
+                }
+
+                container.appendChild(chip);
+            });
+        }
+
+        // Expose for cross-UI sync (Settings edits → Studio chip refresh)
+        window.__alphaRenderPresetChips = renderPresetChips;
+
+        function updatePresetActiveStyles(container, activeId) {
+            const chips = container.querySelectorAll('[data-preset-id]');
+            chips.forEach((c) => {
+                const id = c.getAttribute('data-preset-id');
+                if (id === activeId) {
+                    c.setAttribute('data-active', 'true');
+                    c.style.borderColor = '#818cf8';
+                    c.style.color = '#fff';
+                    c.style.background = '#4338ca';
+                } else {
+                    c.removeAttribute('data-active');
+                    const isCustom = c.querySelector('span[title="Delete this saved preset"]');
+                    c.style.borderColor = isCustom ? '#6366f1' : '#334155';
+                    c.style.color = isCustom ? '#c7d2fe' : '#94a3b8';
+                    c.style.background = isCustom ? 'rgba(79, 70, 229, 0.25)' : '#1e293b';
+                }
+            });
+        }
+
+        function openSavePresetBar() {
+            const currentVal = writeupCustomInput ? writeupCustomInput.value.trim() : '';
+            if (!currentVal) {
+                updateStatus('⚠️ Type an instruction in the box first before saving as a preset!', 'warn');
+                if (writeupCustomInput) writeupCustomInput.focus();
+                return;
+            }
+            savePresetRow.style.display = 'flex';
+            const words = currentVal.split(/\s+/).slice(0, 3).join(' ');
+            presetNameInput.value = '⭐ ' + (words.length > 12 ? words.slice(0, 12) + '...' : words);
+            presetNameInput.focus();
+            presetNameInput.select();
+        }
+
+        function closeSavePresetBar() {
+            savePresetRow.style.display = 'none';
+        }
+
+        savePresetTriggerBtn.onclick = (e) => {
+            e.stopPropagation();
+            if (savePresetRow.style.display === 'flex') {
+                closeSavePresetBar();
+            } else {
+                openSavePresetBar();
+            }
+        };
+
+        confirmSaveBtn.onclick = () => {
+            const textToSave = writeupCustomInput ? writeupCustomInput.value.trim() : '';
+            if (!textToSave) {
+                updateStatus('⚠️ Instruction text cannot be empty!', 'warn');
+                closeSavePresetBar();
+                return;
+            }
+            const label = presetNameInput.value.trim();
+            const created = addCustomPreset(label, textToSave);
+            if (created) {
+                refreshAllPresetUIs();
+                updatePresetActiveStyles(chipsRow, created.id);
+                updateStatus(`✅ Saved new preset: "${created.label}"!`);
+                closeSavePresetBar();
+            }
+        };
+
+        presetNameInput.onkeydown = (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                confirmSaveBtn.click();
+            } else if (e.key === 'Escape') {
+                closeSavePresetBar();
+            }
+        };
+
+        cancelSaveBtn.onclick = closeSavePresetBar;
+
         writeupCustomInput.oninput = () => {
             currentCustomInstruction = writeupCustomInput.value;
             localStorage.setItem(WRITEUP_PROMPT_KEY, currentCustomInstruction);
+            // Refresh chip highlights as user edits
+            const chips = chipsRow.querySelectorAll('[data-preset-id]');
+            chips.forEach(c => {
+                const id = c.getAttribute('data-preset-id');
+                const p = getAllCustomPresets().find(x => x.id === id);
+                if (p && p.text.trim() === writeupCustomInput.value.trim()) {
+                    c.setAttribute('data-active', 'true');
+                    c.style.borderColor = '#818cf8';
+                    c.style.color = '#fff';
+                    c.style.background = '#4338ca';
+                } else {
+                    c.removeAttribute('data-active');
+                    const isCustom = !p?.builtIn;
+                    c.style.borderColor = isCustom ? '#6366f1' : '#334155';
+                    c.style.color = isCustom ? '#c7d2fe' : '#94a3b8';
+                    c.style.background = isCustom ? 'rgba(79, 70, 229, 0.25)' : '#1e293b';
+                }
+            });
         };
 
         writeupCustomInput.onkeydown = (e) => {
@@ -4053,37 +4955,8 @@ Example:
             }
         };
 
-        // 3. Quick Preset Chips
-        const chipsRow = document.createElement('div');
-        Object.assign(chipsRow.style, { display: 'flex', gap: '4px', flexWrap: 'wrap' });
-
-        const presets = [
-            { label: '☕ Coffee', text: 'Invite him out for coffee or a drink in a playful, charming way' },
-            { label: '🐕 Photos', text: 'Playfully tease and compliment him about his photos' },
-            { label: '✈️ Weekend', text: 'Ask what his weekend plans are or if he loves traveling' },
-            { label: '😉 Flirty', text: 'Tease him playfully and ask a flirty question' },
-            { label: '❓ Deep Talk', text: 'Ask an intriguing question to spark a fun, meaningful conversation' }
-        ];
-
-        presets.forEach((p) => {
-            const chip = document.createElement('button');
-            chip.textContent = p.label;
-            chip.title = `Fill instruction: "${p.text}"`;
-            Object.assign(chip.style, {
-                background: '#1e293b', border: '1px solid #334155', color: '#94a3b8',
-                borderRadius: '12px', padding: '2px 7px', fontSize: '9.5px', cursor: 'pointer',
-                transition: 'background 0.15s, color 0.15s, border-color 0.15s'
-            });
-            chip.onmouseenter = () => { chip.style.borderColor = '#818cf8'; chip.style.color = '#fff'; chip.style.background = '#312e81'; };
-            chip.onmouseleave = () => { chip.style.borderColor = '#334155'; chip.style.color = '#94a3b8'; chip.style.background = '#1e293b'; };
-            chip.onclick = () => {
-                writeupCustomInput.value = p.text;
-                currentCustomInstruction = p.text;
-                localStorage.setItem(WRITEUP_PROMPT_KEY, p.text);
-                writeupCustomInput.focus();
-            };
-            chipsRow.appendChild(chip);
-        });
+        // Initial render of preset chips
+        renderPresetChips(chipsRow, writeupCustomInput);
 
         // 4. Primary Action Button
         const genBtn = document.createElement('button');
@@ -4112,6 +4985,7 @@ Example:
         // Assemble Body
         writeupBody.appendChild(contextRow);
         writeupBody.appendChild(instructionHdr);
+        writeupBody.appendChild(savePresetRow);
         writeupBody.appendChild(writeupCustomInput);
         writeupBody.appendChild(chipsRow);
         writeupBody.appendChild(genBtn);
@@ -4222,7 +5096,7 @@ Example:
                 writeupPanel.style.bottom = 'auto';
                 return;
             }
-        } catch (e) {}
+        } catch (e) { }
 
         // Default position: floating beside the dashboard
         if (window.innerWidth > 720) {
@@ -4438,15 +5312,7 @@ Example:
         }
 
         // 2. Check if Column 2 has an active selected card
-        const col2Active = document.querySelector(
-            '[class*="clmn_2_chat_block_item-"][class*="active"], ' +
-            '[class*="clmn_2_chat_block_item-"][class*="selected"], ' +
-            '[class*="clmn_2_chat_block_item-"][class*="current"], ' +
-            '[class*="clmn_2_chat_block_item-"][aria-selected="true"], ' +
-            '[class*="clmn_2"] [class*="active"], ' +
-            '[class*="clmn_2"] [class*="selected"], ' +
-            '[class*="clmn_2"] [class*="current-"]'
-        );
+        const col2Active = findActiveChatCard();
         if (col2Active) {
             const col2Name = getCardPartnerName(col2Active);
             const col2Prof = getCardProfileName(col2Active);
@@ -4471,10 +5337,15 @@ Example:
             }
         }
 
+
+        // Auto-generation on chat switch is disabled to preserve OpenRouter credits.
+        // The studio only generates when the user explicitly clicks ⚡ Generate
+        // (or presses Ctrl+Enter). Campaign flows (All Chats / Chance) call
+        // generateCampaignReply() directly and are unaffected.
         // If user has not typed custom instructions, auto-refresh suggestions when switching chats
-        if (!currentCustomInstruction && chatData && forceRefresh) {
-            triggerStudioWriteup(false);
-        }
+        // if (chatData && forceRefresh && !currentCustomInstruction && !isGeneratingAI) {
+        //     triggerStudioWriteup(false);
+        // }
     }
 
     function renderSuggestedRepliesUI(chatData, suggestions, isLoading = false) {
@@ -4535,7 +5406,7 @@ Example:
                     };
                 }
             }
-        } catch (e) {}
+        } catch (e) { }
         return origFetch.apply(this, args);
     };
 
@@ -4563,7 +5434,7 @@ Example:
                         storage.setItem(key, now.toString());
                     }
                 }
-            } catch (e) {}
+            } catch (e) { }
         });
     }
 
@@ -4595,9 +5466,9 @@ Example:
                 headers: lastActiveApiEndpoint.headers,
                 credentials: lastActiveApiEndpoint.credentials,
                 cache: 'no-store'
-            }).catch(() => {});
+            }).catch(() => { });
         } else {
-            origFetch(`${window.location.href}`, { method: 'GET', credentials: 'include', cache: 'no-store' }).catch(() => {});
+            origFetch(`${window.location.href}`, { method: 'GET', credentials: 'include', cache: 'no-store' }).catch(() => { });
         }
         console.log(`[KeepActive] 3-min Keep-Alive executed at ${new Date().toLocaleTimeString()}`);
     }
@@ -4634,7 +5505,7 @@ Example:
                     gain.connect(audioContext.destination);
                     osc.start();
                 }
-            } catch (e) {}
+            } catch (e) { }
         }
     }
 
@@ -4653,7 +5524,7 @@ Example:
             keepAliveIframe = null;
         }
         if (audioContext) {
-            audioContext.suspend().catch(() => {});
+            audioContext.suspend().catch(() => { });
         }
     }
 
@@ -4838,7 +5709,7 @@ Example:
                 uiContainer.style.bottom = 'auto';
                 return;
             }
-        } catch (e) {}
+        } catch (e) { }
         // Default position: bottom-right
         uiContainer.style.right = '18px';
         uiContainer.style.bottom = '18px';
@@ -4874,13 +5745,13 @@ Example:
             autoLikeWinkBtn.style.background = 'rgba(16, 185, 129, 0.2)';
             autoLikeWinkBtn.style.borderColor = '#10b981';
             autoLikeWinkBtn.style.color = '#6ee7b7';
-            autoLikeWinkBtn.innerHTML = `<span>⚡ Instant: <b>Winks & Likes</b></span> <span style="font-size:9px; background:#059669; color:#fff; padding:1px 5px; border-radius:3px;">ON (${count})</span>`;
+            autoLikeWinkBtn.innerHTML = `<span>Instant: <b>Winks & Likes & Views</b></span> <span style="font-size:9px; background:#059669; color:#fff; padding:1px 5px; border-radius:3px;">ON (${count})</span>`;
             autoLikeWinkBtn.title = `Instant Responder ON: Automatically intercepts and replies to likes & winks immediately they arrive (${count} answered)`;
         } else {
             autoLikeWinkBtn.style.background = '#1e293b';
             autoLikeWinkBtn.style.borderColor = '#334155';
             autoLikeWinkBtn.style.color = '#94a3b8';
-            autoLikeWinkBtn.innerHTML = `<span>⚡ Instant: <b>Winks & Likes</b></span> <span style="font-size:9px; background:#334155; color:#cbd5e1; padding:1px 5px; border-radius:3px;">OFF</span>`;
+            autoLikeWinkBtn.innerHTML = `<span>Instant: <b>Winks & Likes & Views</b></span> <span style="font-size:9px; background:#334155; color:#cbd5e1; padding:1px 5px; border-radius:3px;">OFF</span>`;
             autoLikeWinkBtn.title = 'Instant Responder OFF: Click to automatically respond to likes and winks as they arrive';
         }
     }
